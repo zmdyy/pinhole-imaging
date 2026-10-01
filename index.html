@@ -6,119 +6,129 @@
 <title>小孔成像 · 交互教学演示</title>
 <style>
 :root{
-  --bg:#07101d;--panel:#0c1727;--panel2:#111f33;--line:#21324a;--text:#eef6ff;
-  --muted:#9fb2c8;--cyan:#59d8ff;--amber:#ffcf5a;--red:#ff667c;--green:#64e0a3;
-  --shadow:0 18px 48px rgba(0,0,0,.28);
+  --bg:#062032;--bg2:#08283a;--bg3:#0b3247;--line:#244c61;--text:#edf8fb;
+  --muted:#8fb2c2;--cyan:#5ad6d4;--cyan2:#8ce7e0;--amber:#efc766;--white:#fff;
+  --panelText:#24333b;--panelMuted:#75848c;--soft:#f5f7f7;--green:#2da68e;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:radial-gradient(circle at 45% 0,#12223a 0,#07101d 48%,#050b14 100%);color:var(--text);font-family:Inter,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;overflow-x:hidden}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#061c2b;font-family:Inter,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:var(--text)}
 button,input{font:inherit}
 button{cursor:pointer}
-.app{min-height:100vh;padding:14px 16px 18px}
-.topbar{height:62px;display:flex;align-items:center;gap:14px;margin-bottom:12px}
-.brand{display:flex;align-items:center;gap:12px;min-width:290px}
-.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#153655,#0d2036);box-shadow:inset 0 0 0 1px #2d506f;position:relative}
-.logo:before{content:"";position:absolute;left:20px;top:6px;width:2px;height:30px;background:#74e0ff}
-.logo:after{content:"";position:absolute;left:9px;top:20px;width:24px;height:2px;background:linear-gradient(90deg,#ffcf5a,#74e0ff)}
-.title h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.04em}
-.title p{margin:3px 0 0;color:var(--muted);font-size:12px}
-.view-switch{display:flex;background:#081421;border:1px solid var(--line);border-radius:13px;padding:4px;margin-left:auto}
-.view-switch button,.ghost-btn{border:0;color:#b7c9da;background:transparent;padding:9px 15px;border-radius:10px;font-weight:700}
-.view-switch button.active{background:#173149;color:#fff;box-shadow:inset 0 0 0 1px #285270}
-.ghost-btn{border:1px solid var(--line);background:#0b1725}
-.ghost-btn:hover{border-color:#36526f;color:#fff}
-
-.main-grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:12px}
-.stage-card,.screen-card,.control-card{background:linear-gradient(180deg,rgba(15,30,49,.96),rgba(8,19,33,.97));border:1px solid #1e3148;border-radius:18px;box-shadow:var(--shadow)}
-.stage-card{position:relative;min-height:610px;overflow:hidden}
-.stage-head{position:absolute;z-index:6;left:14px;right:14px;top:12px;display:flex;align-items:center;gap:8px;pointer-events:none}
-.badge{font-size:12px;border:1px solid #2b4865;background:rgba(7,18,31,.88);padding:6px 9px;border-radius:999px;color:#c5d6e7;backdrop-filter:blur(10px)}
-.badge.warn{border-color:#6b572d;color:#ffe298}
-.badge.good{border-color:#235b47;color:#8cf0be}
+.app{height:100vh;min-height:680px;display:grid;grid-template-rows:46px minmax(0,1fr);background:linear-gradient(180deg,#071f30,#062436)}
+.topbar{display:flex;align-items:center;padding:0 10px;border-bottom:1px solid rgba(110,159,183,.15);background:#061d2c;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:27px;height:27px;position:relative;border-radius:5px;background:#0c3449;border:1px solid #21576d}
+.logo:before{content:"";position:absolute;left:12px;top:3px;width:2px;height:20px;background:#6bdfe0}
+.logo:after{content:"";position:absolute;left:4px;top:12px;width:18px;height:2px;background:#e6ca63}
+.title h1{font-size:20px;margin:0;font-weight:800;letter-spacing:.04em}
+.title p{display:none}
+.top-actions{margin-left:auto;display:flex;gap:8px}
+.ghost-btn,.top-actions button{border:1px solid #cbd5d7;background:#fff;color:#34454d;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+#fullscreenBtn{background:#3fb8aa;border-color:#3fb8aa;color:#fff}
+.workbench{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 286px}
+.workspace{min-width:0;min-height:0;display:grid;grid-template-rows:57px minmax(0,1fr) 32px 50px;background:linear-gradient(180deg,#08283a 0,#062538 100%)}
+.workspace-bar{display:flex;align-items:center;padding:5px 10px 4px;border-bottom:1px solid rgba(105,159,183,.2);gap:12px}
+.workspace-title{font-size:13px;font-weight:750;color:#e7f2f5;margin-bottom:4px}
+.workspace-sub{font-size:10px;color:#7ea3b4;margin-left:5px}
+.view-switch{display:flex;gap:4px}
+.view-switch button{border:1px solid #1f4b61;background:#0b3348;color:#91b6c5;border-radius:3px;padding:6px 12px;font-size:11px}
+.view-switch button.active{background:#17556a;color:#eaffff;border-color:#2d7485}
+.stage-tools{margin-left:auto;display:flex;gap:7px;align-items:center}
+.stage-tools button{border:1px solid #2a5d70;background:#0e3b50;color:#c7e5ed;border-radius:5px;padding:6px 10px;font-size:11px;font-weight:650}
+.stage-tools button.active{background:#2a776f;border-color:#58b9aa;color:#fff}
+.scene-shell{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 160px}
+.stage-card{min-width:0;min-height:0;position:relative;overflow:hidden;border-right:1px solid rgba(93,147,170,.17);background:
+  radial-gradient(circle at 48% 42%,rgba(21,73,91,.16),transparent 36%),
+  linear-gradient(180deg,#082638,#062436)}
+svg#scene{display:block;width:100%;height:100%;min-height:0;touch-action:none}
+.stage-head{position:absolute;z-index:5;left:11px;top:9px;display:flex;align-items:center;gap:6px;pointer-events:none}
+.badge{font-size:10px;border:1px solid #2a566a;background:rgba(5,28,42,.82);padding:4px 7px;border-radius:4px;color:#aac8d5;backdrop-filter:blur(5px)}
+.badge.warn{border-color:#7c6938;color:#f2d985}
+.badge.good{border-color:#2d6b5a;color:#8ce0bd}
+.badge.info{border-color:#36687e;color:#a8d9ea}
 .badge.hidden{display:none}
-.stage-tools{margin-left:auto;pointer-events:auto;display:flex;gap:7px}
-.stage-tools button{border:1px solid #29415b;background:rgba(9,21,36,.9);color:#cfe0ef;border-radius:10px;padding:7px 10px}
-.stage-tools button.active{border-color:#57bddd;color:#fff;background:#113047}
-svg#scene{width:100%;height:610px;display:block;touch-action:none}
-.stage-footer{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:10px;align-items:flex-end;pointer-events:none}
-.readout{pointer-events:auto;display:flex;gap:8px;background:rgba(6,15,27,.88);border:1px solid #233a53;border-radius:14px;padding:8px;backdrop-filter:blur(8px)}
-.metric{min-width:118px;padding:8px 11px;border-radius:10px;background:#0f1d2e;border:1px solid #20344c}
-.metric .k{font-size:11px;color:#89a1b8}
-.metric .v{font-size:22px;font-weight:800;margin-top:2px}
-.stage-tip{margin-left:auto;max-width:410px;background:rgba(6,15,27,.88);border:1px solid #233a53;border-radius:13px;padding:10px 12px;color:#c6d7e8;font-size:13px;line-height:1.55;backdrop-filter:blur(8px)}
-
-.screen-card{padding:14px;display:flex;flex-direction:column;min-height:610px}
-.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.panel-title h2{font-size:16px;margin:0}
-.eye{font-size:12px;color:#b7c9dc;display:flex;align-items:center;gap:5px}
-.screen-wrap{position:relative;flex:1;min-height:355px;border-radius:16px;border:1px solid #31445a;background:#060a0f;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 60px rgba(0,0,0,.78)}
-.screen-surface{position:absolute;inset:18px;border-radius:10px;background:
-  radial-gradient(circle at 40% 38%,rgba(255,255,255,.05),transparent 26%),
-  repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),
-  #15191c;overflow:hidden}
-.screen-surface.translucent{background:
-  radial-gradient(circle at 44% 38%,rgba(255,255,255,.14),transparent 34%),
-  repeating-linear-gradient(0deg,rgba(255,255,255,.032) 0 1px,transparent 1px 3px),
-  #b8c2c1}
-.screen-surface.transparent{background:
-  linear-gradient(135deg,rgba(120,170,190,.09),rgba(255,255,255,.02)),
-  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 7px),
-  #172027}
-.screen-surface.opaque{background:#20252a}
+.stage-tip{position:absolute;right:10px;bottom:9px;max-width:330px;padding:6px 9px;border-radius:4px;background:rgba(4,25,38,.78);border:1px solid rgba(76,127,150,.26);font-size:10px;line-height:1.5;color:#84a8b7;pointer-events:none}
+.zoom-tools{position:absolute;left:10px;bottom:8px;display:flex;gap:4px;z-index:7}
+.zoom-tools button{width:27px;height:25px;border-radius:4px;border:1px solid #285468;background:#0b354a;color:#b8d9e4;font-size:13px}
+.zoom-tools .wide{width:auto;padding:0 9px;font-size:10px}
+.screen-card{min-height:0;background:#082436;padding:9px 8px;border-left:1px solid rgba(22,65,82,.55);display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.panel-title{width:100%;margin:42px 0 6px}
+.panel-title h2{font-size:12px;margin:0;color:#d9eaf0}
+.eye{font-size:9px;color:#7195a6;margin-top:3px}
+.screen-wrap{position:relative;width:128px;height:128px;border-radius:50%;border:1px solid #31586a;background:#051b29;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 35px rgba(0,0,0,.42)}
+.screen-surface{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:#172027}
+.screen-surface.translucent{background:radial-gradient(circle at 42% 35%,rgba(255,255,255,.15),transparent 34%),#aab5b0}
+.screen-surface.transparent{background:linear-gradient(135deg,rgba(130,205,222,.15),rgba(255,255,255,.02)),#142a34}
+.screen-surface.opaque{background:#22292d}
 .image-holder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform:rotate(180deg);transform-origin:50% 50%}
-.image-holder svg{overflow:visible}
-.no-image{position:absolute;left:20px;right:20px;top:50%;transform:translateY(-50%);text-align:center;color:#b5c2cf;font-weight:700;line-height:1.6;text-shadow:0 2px 7px #000}
-.material-note{margin-top:10px;border-radius:12px;background:#0c1929;border:1px solid #20364f;padding:10px 11px;font-size:12px;line-height:1.55;color:#b9cbdb;min-height:58px}
-.side-btn{margin-top:10px;width:100%;border:1px solid #29465f;background:#102338;color:#d7e8f7;border-radius:10px;padding:9px 12px;font-weight:700}
-.indicators{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.indicator{border:1px solid #20364e;background:#0b1726;padding:9px;border-radius:11px}
-.indicator label{font-size:11px;color:#91a7bc}
-.bar{height:7px;border-radius:99px;background:#14273b;margin-top:7px;overflow:hidden}
-.bar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#59d8ff,#64e0a3);border-radius:inherit;transition:.25s width}
-
-.controls{margin-top:12px}
-.inquiry-tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px}
-.inquiry-tabs button{border:1px solid #233951;background:#0c1929;color:#a9bed1;border-radius:12px;padding:10px 8px;font-size:13px;font-weight:700;min-height:48px}
-.inquiry-tabs button.active{background:#16314a;border-color:#3e7398;color:#fff}
-.control-card{padding:14px}
-.control-row{display:flex;align-items:center;gap:12px;min-height:52px}
-.control-row + .control-row{border-top:1px solid rgba(37,56,77,.7)}
-.control-row label.row-title{width:110px;color:#a8bdd0;font-size:13px;flex:none}
-.segment{display:flex;gap:7px;flex-wrap:wrap}
-.segment button{border:1px solid #2a4058;background:#0b1827;color:#c0d0df;border-radius:9px;padding:8px 11px;font-weight:700}
-.segment button.active{border-color:#55badb;background:#133249;color:#fff}
-.segment button .sub{display:block;font-weight:500;font-size:10px;color:#8ca4b9;margin-top:2px}
-.range-wrap{display:flex;align-items:center;gap:10px;flex:1}
-input[type=range]{width:100%;accent-color:#59d8ff}
-.range-ends{font-size:11px;color:#7f96aa;display:flex;justify-content:space-between;width:100%}
-.control-help{margin-left:auto;color:#7f96aa;font-size:11px}
-.equal-badge{font-size:11px;color:#8be9b7;border:1px solid #285d49;background:#0e2a21;padding:5px 8px;border-radius:999px}
-.point-buttons button.top.active{border-color:#ffcf5a;color:#ffdf7e;background:#342914}
-.point-buttons button.bottom.active{border-color:#59d8ff;color:#8fe7ff;background:#112b36}
-.hole-symbol{width:22px;height:22px;vertical-align:middle;margin-right:5px}
-.mode-copy{margin-bottom:10px;padding:11px 13px;border:1px solid #243d57;background:#0a1726;border-radius:12px;color:#c6d7e6;font-size:13px;line-height:1.55}
-.mode-copy strong{color:#fff}
+.image-holder svg{max-height:74%;max-width:74%;overflow:visible}
+.ambient-veil{position:absolute;inset:0;border-radius:50%;background:rgba(221,240,239,.64);opacity:0;pointer-events:none;transition:.2s opacity}
+.no-image{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);text-align:center;color:#cad3d5;font-size:9px;font-weight:650;line-height:1.45}
+.side-btn{margin:7px 0 8px;width:100%;border:1px solid #25576a;background:#0b3b50;color:#cbe4eb;border-radius:4px;padding:5px 7px;font-size:9px;font-weight:650}
+.material-note{width:100%;background:#0d3d50;border:1px solid #28596a;border-radius:5px;padding:7px;color:#9fc0cc;font-size:9px;line-height:1.45;min-height:49px}
+.hole-card{width:100%;margin-top:8px;border:1px solid #28596a;background:#0d3d50;border-radius:5px;padding:7px}
+.hole-card-title{font-size:10px;font-weight:750;color:#e1eff3}
+.hole-preview{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:9px;color:#8eafbc}
+.hole-preview svg{width:38px;height:38px;color:#cfdbdc;flex:none}
+.indicators{width:100%;display:grid;grid-template-columns:1fr;gap:5px;margin-top:7px}
+.indicator{font-size:9px;color:#87a9b7}
+.indicator-line{display:flex;justify-content:space-between;gap:5px}
+.bar{height:4px;border-radius:99px;background:#163f50;margin-top:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:50%;background:#54c8bc;border-radius:inherit;transition:.2s width}
+.scene-options{display:flex;align-items:center;gap:16px;padding:0 12px;border-top:1px solid rgba(80,133,155,.2);border-bottom:1px solid rgba(80,133,155,.2);font-size:9px;color:#8eafbd}
+.legend-line{display:inline-flex;align-items:center;gap:5px}
+.legend-line:before{content:"";width:17px;height:2px;background:#edc864;display:inline-block}
+.legend-line.cool:before{background:#9ad9e7}
+.legend-line.dash:before{background:repeating-linear-gradient(90deg,#6c91a0 0 3px,transparent 3px 6px)}
+.status-dot{width:7px;height:7px;border-radius:2px;background:#54c8bc;display:inline-block}
+.bottom-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding:5px 7px;background:#082436}
+.metric{background:#fff;color:#52636b;border-radius:5px;display:flex;align-items:center;justify-content:space-between;padding:5px 11px;min-width:0}
+.metric .k{font-size:10px;color:#8a999f}
+.metric .v{font-size:16px;font-weight:800;color:#26373e;white-space:nowrap}
+.metric .v em{font-size:10px;font-style:normal;font-weight:600;color:#6d7b80}
+.metric.nature .v{color:#218b7a}
+.parameter-panel{min-height:0;background:#fff;color:var(--panelText);border-left:1px solid #d8dfdf;overflow:auto;padding:10px 10px 16px}
+.parameter-panel::-webkit-scrollbar{width:6px}.parameter-panel::-webkit-scrollbar-thumb{background:#c8d1d2;border-radius:5px}
+.param-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.param-head h2{font-size:15px;margin:0}
+.param-tag{font-size:9px;color:#6d858b;background:#edf3f2;border-radius:99px;padding:3px 7px}
+.inquiry-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px}
+.inquiry-tabs button{border:1px solid #d8dfdf;background:#f5f7f7;color:#617177;border-radius:4px;padding:7px 5px;font-size:9px;min-height:32px;font-weight:650;text-align:left}
+.inquiry-tabs button.active{background:#e2f2ef;border-color:#9ccfc5;color:#237f70}
+.mode-copy{padding:8px;border-radius:5px;background:#f2f6f5;border:1px solid #dbe6e3;color:#596a70;font-size:9px;line-height:1.5;margin-bottom:7px}
+.mode-copy strong{color:#263a40}
+.control-card{background:#fff}
+.control-row{display:block;padding:8px 0;border-top:1px solid #e8eded}
+.control-row:first-child{border-top:0}
+.control-row label.row-title{display:block;width:auto;font-size:10px;font-weight:750;color:#34464c;margin-bottom:6px}
+.segment{display:flex;gap:4px;flex-wrap:wrap}
+.segment button{flex:1;min-width:72px;border:1px solid #d8dfdf;background:#f7f9f9;color:#617278;border-radius:4px;padding:6px 5px;font-size:9px;font-weight:650}
+.segment button.active{background:#e5f4f1;border-color:#8bc9bd;color:#247c6f}
+.segment button .sub{display:block;color:#89979b;font-size:8px;font-weight:500;margin-top:2px}
+.range-wrap{display:flex;align-items:center;gap:6px;flex:1;color:#74858b;font-size:8px}
+input[type=range]{width:100%;accent-color:#2c9c8d;height:14px}
+.control-help{font-size:8px;color:#8d9b9f;margin-top:4px;line-height:1.35}
+.equal-badge{display:inline-block;margin-top:5px;font-size:8px;color:#25806f;background:#eaf6f3;border:1px solid #b6ddd5;padding:3px 6px;border-radius:99px}
+.point-buttons button.top.active{background:#fff5da;border-color:#dbc06a;color:#8b6e14}
+.point-buttons button.bottom.active{background:#e6f5fa;border-color:#9bcedd;color:#34778a}
+.hole-symbol{width:15px;height:15px;vertical-align:middle;margin-right:3px}
 .hidden-row{display:none!important}
-.footer-note{text-align:center;color:#61778c;font-size:11px;margin-top:10px}
-
-@media(max-width:1100px){
-  .main-grid{grid-template-columns:1fr 270px}
-  .inquiry-tabs{grid-template-columns:repeat(3,1fr)}
+.footer-note{font-size:8px;color:#8a999e;padding-top:8px;line-height:1.4;border-top:1px solid #edf0f0;margin-top:5px}
+@media(max-width:1000px){
+  .workbench{grid-template-columns:minmax(0,1fr) 250px}
+  .scene-shell{grid-template-columns:minmax(0,1fr) 145px}
+  .stage-tools button{padding:5px 7px}
 }
-@media(max-width:820px){
-  .app{padding:8px}
-  .topbar{height:auto;flex-wrap:wrap}
-  .brand{min-width:0}
-  .view-switch{margin-left:0}
-  .main-grid{grid-template-columns:1fr}
-  .screen-card{min-height:470px}
-  .stage-card{min-height:520px}
-  svg#scene{height:520px}
-  .inquiry-tabs{grid-template-columns:repeat(2,1fr)}
-  .control-row{align-items:flex-start;flex-direction:column;padding:10px 0}
-  .control-row label.row-title{width:auto}
-  .stage-footer{display:block}
-  .stage-tip{margin-top:7px;max-width:none}
+@media(max-width:760px){
+  html,body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh}
+  .workbench{grid-template-columns:1fr}
+  .parameter-panel{min-height:520px}
+  .workspace{min-height:720px}
+  .scene-shell{grid-template-columns:1fr}
+  .screen-card{display:none}
+  .workspace-bar{height:auto;flex-wrap:wrap}
+  .stage-tools{margin-left:0}
 }
 </style>
 </head>
@@ -129,139 +139,174 @@ input[type=range]{width:100%;accent-color:#59d8ff}
       <div class="logo"></div>
       <div class="title"><h1>小孔成像</h1><p>装置 · 光路 · 像，同步观察</p></div>
     </div>
-    <div class="view-switch">
-      <button id="btn3d" class="active">立体观察</button>
-      <button id="btn2d">光路剖视</button>
+    <div class="top-actions">
+      <button id="resetBtn">↻ 重置实验</button>
+      <button id="fullscreenBtn">⛶ 进入专注</button>
     </div>
-    <button id="fullscreenBtn" class="ghost-btn">⛶ 全屏</button>
-    <button id="resetBtn" class="ghost-btn">↺ 复位</button>
   </header>
 
-  <section class="main-grid">
-    <div class="stage-card">
-      <div class="stage-head">
-        <span id="viewBadge" class="badge">3D装置观察</span>
-        <span id="cutBadge" class="badge warn hidden">教学剖视：真实暗箱外壳不透明</span>
-        <span id="areaBadge" class="badge good hidden">孔面积保持不变</span>
-        <span id="explodeBadge" class="badge info hidden">结构拆解：仅观察部件，不代表实验状态</span>
+  <div class="workbench">
+    <main class="workspace">
+      <div class="workspace-bar">
+        <div>
+          <div class="workspace-title">自制装置 · 3D 成像观察 <span class="workspace-sub">拖动旋转 · 探索成像 · 双视图验证</span></div>
+          <div class="view-switch">
+            <button id="btn3d" class="active">立体视角</button>
+            <button id="btn2d">光路剖视</button>
+            <button id="btnHole">看小孔</button>
+            <button id="btnScreen">看光屏</button>
+          </div>
+        </div>
         <div class="stage-tools">
-          <button id="cameraBtn">重置视角</button>
-          <button id="explodeBtn">拆解结构</button>
+          <button id="cameraBtn">复位视角</button>
+          <button id="explodeBtn">结构拆解</button>
           <button id="cutBtn">剖开观察</button>
           <button id="rayBtn">显示光路</button>
         </div>
       </div>
-      <svg id="scene" viewBox="0 0 1000 610" aria-label="小孔成像实验装置"></svg>
-      <div class="stage-footer">
-        <div class="readout">
-          <div class="metric"><div class="k">物体高度</div><div class="v"><span id="objHeightText">6.0</span> cm</div></div>
-          <div class="metric"><div class="k">像的高度</div><div class="v"><span id="imgHeightText">7.2</span> cm</div></div>
-        </div>
-        <div id="stageTip" class="stage-tip">立体装置采用正交视图：拖动只改变观察方向，不改变装置尺度。切换到“光路剖视”可看清同一实验状态下的物理过程。</div>
-      </div>
-    </div>
 
-    <aside class="screen-card">
-      <div class="panel-title">
-        <h2>从观察侧看光屏</h2>
-        <div class="eye">👁 观察者</div>
+      <div class="scene-shell">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span id="viewBadge" class="badge">3D装置观察</span>
+            <span id="cutBadge" class="badge warn hidden">教学剖视：真实暗箱外壳不透明</span>
+            <span id="areaBadge" class="badge good hidden">孔面积保持不变</span>
+            <span id="explodeBadge" class="badge info hidden">结构拆解：仅观察部件</span>
+          </div>
+          <svg id="scene" viewBox="0 0 1000 610" aria-label="小孔成像实验装置"></svg>
+          <div class="zoom-tools">
+            <button id="zoomOut">−</button>
+            <button id="zoomIn">＋</button>
+            <button id="cameraInlineBtn" class="wide">↻ 复位视角</button>
+          </div>
+          <div id="stageTip" class="stage-tip">正交视图：旋转只改变观察方向，不改变装置尺度。</div>
+        </div>
+
+        <aside class="screen-card">
+          <div class="panel-title">
+            <h2>光屏外侧正视</h2>
+            <div class="eye">与“看光屏”方向一致</div>
+          </div>
+          <div class="screen-wrap">
+            <div id="screenSurface" class="screen-surface translucent"></div>
+            <div id="imageHolder" class="image-holder"></div>
+            <div id="ambientVeil" class="ambient-veil"></div>
+            <div id="noImage" class="no-image" style="display:none"></div>
+          </div>
+          <button id="screenSideBtn" class="side-btn">查看光屏受光面</button>
+          <div id="materialNote" class="material-note">半透明膜既能透过部分光，又能把光向多个方向散射。</div>
+          <div class="hole-card">
+            <div class="hole-card-title">小孔形状特写</div>
+            <div class="hole-preview">
+              <svg id="holePreviewSvg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11.3" fill="currentColor"/></svg>
+              <span id="holePreviewText">圆形孔 · 面积保持不变</span>
+            </div>
+          </div>
+          <div class="indicators">
+            <div class="indicator"><div class="indicator-line"><span>像的亮度</span><span></span></div><div class="bar"><i id="brightnessBar"></i></div></div>
+            <div class="indicator"><div class="indicator-line"><span>像的清晰度</span><span></span></div><div class="bar"><i id="clarityBar"></i></div></div>
+            <div class="indicator"><div class="indicator-line"><span>对比度</span><span></span></div><div class="bar"><i id="contrastBar"></i></div></div>
+          </div>
+        </aside>
       </div>
-      <div class="screen-wrap">
-        <div id="screenSurface" class="screen-surface translucent"></div>
-        <div id="imageHolder" class="image-holder"></div>
-        <div id="noImage" class="no-image" style="display:none"></div>
+
+      <div class="scene-options">
+        <span class="legend-line">物体上部光线</span>
+        <span class="legend-line cool">物体下部光线</span>
+        <span class="legend-line dash">中心参考线</span>
+        <span><i class="status-dot"></i> 暗箱完整</span>
+        <span id="ambientStatus">环境：较暗</span>
       </div>
-      <button id="screenSideBtn" class="side-btn">查看光屏受光面</button>
-      <div id="materialNote" class="material-note">半透明膜既能透过部分光，又能把光向多个方向散射，适合作为外侧观察的小孔成像光屏。</div>
-      <div class="indicators">
-        <div class="indicator"><label>像的亮度</label><div class="bar"><i id="brightnessBar"></i></div></div>
-        <div class="indicator"><label>像的清晰度</label><div class="bar"><i id="clarityBar"></i></div></div>
+
+      <div class="bottom-stats">
+        <div class="metric"><div class="k">物体高度</div><div class="v"><span id="objHeightText">6.0</span> <em>cm</em></div></div>
+        <div class="metric"><div class="k">像的高度</div><div class="v"><span id="imgHeightText">6.0</span> <em>cm</em></div></div>
+        <div class="metric nature"><div class="k">成像性质</div><div class="v">倒立 · 实像</div></div>
       </div>
+    </main>
+
+    <aside class="parameter-panel">
+      <div class="param-head"><h2>实验参数</h2><span class="param-tag">控制变量</span></div>
+      <div class="inquiry-tabs" id="tabs">
+        <button data-mode="cause" class="active">① 为什么会成像</button>
+        <button data-mode="invert">② 为什么倒立</button>
+        <button data-mode="size">③ 孔大小</button>
+        <button data-mode="shape">④ 孔形状</button>
+        <button data-mode="material">⑤ 光屏材料</button>
+        <button data-mode="darkbox">⑥ 暗箱作用</button>
+        <button data-mode="free">自由探索</button>
+      </div>
+
+      <div id="modeCopy" class="mode-copy"><strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被挡住，只有少量光能通过小孔到达光屏。</div>
+
+      <div class="control-card">
+        <div class="control-row" id="rowObject">
+          <label class="row-title">发光物体</label>
+          <div class="segment" id="objectSeg">
+            <button data-value="candle" class="active">蜡烛<span class="sub">真实实验</span></button>
+            <button data-value="arrow">箭头<span class="sub">上下关系</span></button>
+            <button data-value="f">字母 F<span class="sub">上下 + 左右</span></button>
+          </div>
+        </div>
+
+        <div class="control-row" id="rowPoints">
+          <label class="row-title">选择物点</label>
+          <div class="segment point-buttons">
+            <button id="topPointBtn" class="top active">● 顶部物点</button>
+            <button id="bottomPointBtn" class="bottom">● 底部物点</button>
+          </div>
+          <div class="control-help">可同时选择两个物点，比较它们在光屏上的对应位置。</div>
+        </div>
+
+        <div class="control-row hidden-row" id="rowApertureSize">
+          <label class="row-title">孔径大小</label>
+          <div class="range-wrap"><span>小</span><input id="apertureRange" type="range" min="8" max="100" value="38"><span>大</span></div>
+          <div class="control-help">固定其他条件，只改变孔径：比较亮度与几何模糊。</div>
+        </div>
+
+        <div class="control-row hidden-row" id="rowShape">
+          <label class="row-title">小孔形状</label>
+          <div class="segment" id="shapeSeg">
+            <button data-value="circle" class="active"><svg class="hole-symbol" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11.3" fill="currentColor"/></svg>圆形</button>
+            <button data-value="square"><svg class="hole-symbol" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="currentColor"/></svg>方形</button>
+            <button data-value="triangle"><svg class="hole-symbol" viewBox="0 0 40 40"><path d="M20 5 L37.5 35.3 L2.5 35.3 Z" fill="currentColor"/></svg>三角形</button>
+          </div>
+          <span class="equal-badge">切换形状时，孔面积严格保持不变</span>
+        </div>
+
+        <div class="control-row hidden-row" id="rowMaterial">
+          <label class="row-title">光屏材料</label>
+          <div class="segment" id="materialSeg">
+            <button data-value="transparent">透明膜<span class="sub">透过多 · 散射少</span></button>
+            <button data-value="translucent" class="active">半透明膜<span class="sub">透过 + 散射</span></button>
+            <button data-value="opaque">不透明膜<span class="sub">背面不透光</span></button>
+          </div>
+        </div>
+
+        <div class="control-row hidden-row" id="rowDarkbox">
+          <label class="row-title">暗箱条件</label>
+          <div class="segment" id="straySeg">
+            <button data-value="closed" class="active">暗箱完整<span class="sub">减少杂散光</span></button>
+            <button data-value="leak">杂散光进入<span class="sub">比较图像对比度</span></button>
+          </div>
+          <div class="control-help">这里改变的是进入暗箱的杂散光，不是“教学剖视”。观察像是否仍形成，以及是否容易辨认。</div>
+        </div>
+
+        <div class="control-row hidden-row" id="rowFree">
+          <label class="row-title">改变相对位置</label>
+          <div class="range-wrap"><span>物远</span><input id="objectPosRange" type="range" min="230" max="390" value="320"><span>物近</span></div>
+          <div class="range-wrap"><span>屏近</span><input id="screenPosRange" type="range" min="230" max="380" value="300"><span>屏远</span></div>
+        </div>
+
+        <div class="control-row hidden-row" id="rowHeight">
+          <label class="row-title">物体高度</label>
+          <div class="range-wrap"><span>小</span><input id="heightRange" type="range" min="40" max="80" value="60"><span>大</span></div>
+          <div class="control-help">页面只显示物高与像高，不显示物距、像距数值。</div>
+        </div>
+      </div>
+      <div class="footer-note">几何光学近似。极小孔径下的衍射不是本页主线；孔径变化重点用于建立“亮度—清晰度”初步概念。</div>
     </aside>
-  </section>
-
-  <section class="controls">
-    <div class="inquiry-tabs" id="tabs">
-      <button data-mode="cause" class="active">① 为什么会成像</button>
-      <button data-mode="invert">② 为什么倒立</button>
-      <button data-mode="size">③ 孔大小</button>
-      <button data-mode="shape">④ 孔形状</button>
-      <button data-mode="material">⑤ 光屏材料</button>
-      <button data-mode="free">自由探索</button>
-    </div>
-
-    <div class="control-card">
-      <div id="modeCopy" class="mode-copy"><strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被小孔板挡住，只有少量光能通过小孔到达光屏。</div>
-
-      <div class="control-row" id="rowObject">
-        <label class="row-title">物体</label>
-        <div class="segment" id="objectSeg">
-          <button data-value="candle" class="active">蜡烛<span class="sub">真实实验</span></button>
-          <button data-value="arrow">箭头<span class="sub">上下关系</span></button>
-          <button data-value="f">字母 F<span class="sub">上下+左右</span></button>
-        </div>
-      </div>
-
-      <div class="control-row" id="rowPoints">
-        <label class="row-title">选择物点</label>
-        <div class="segment point-buttons">
-          <button id="topPointBtn" class="top active">● 顶部物点</button>
-          <button id="bottomPointBtn" class="bottom">● 底部物点</button>
-        </div>
-        <div class="control-help">可同时选择两个物点</div>
-      </div>
-
-      <div class="control-row hidden-row" id="rowApertureSize">
-        <label class="row-title">孔的大小</label>
-        <div class="range-wrap">
-          <span style="font-size:12px;color:#8ca2b7">小</span>
-          <input id="apertureRange" type="range" min="8" max="100" value="38">
-          <span style="font-size:12px;color:#8ca2b7">大</span>
-        </div>
-        <div class="control-help">其他条件保持不变</div>
-      </div>
-
-      <div class="control-row hidden-row" id="rowShape">
-        <label class="row-title">小孔形状</label>
-        <div class="segment" id="shapeSeg">
-          <button data-value="circle" class="active"><svg class="hole-symbol" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11.3" fill="currentColor"/></svg>圆形</button>
-          <button data-value="square"><svg class="hole-symbol" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="currentColor"/></svg>方形</button>
-          <button data-value="triangle"><svg class="hole-symbol" viewBox="0 0 40 40"><path d="M20 5 L37.5 35.3 L2.5 35.3 Z" fill="currentColor"/></svg>三角形</button>
-        </div>
-        <span class="equal-badge">面积保持不变</span>
-      </div>
-
-      <div class="control-row hidden-row" id="rowMaterial">
-        <label class="row-title">光屏材料</label>
-        <div class="segment" id="materialSeg">
-          <button data-value="transparent">透明膜<span class="sub">透过多 / 散射少</span></button>
-          <button data-value="translucent" class="active">半透明膜<span class="sub">透过 + 散射</span></button>
-          <button data-value="opaque">不透明膜<span class="sub">外侧不透光</span></button>
-        </div>
-      </div>
-
-      <div class="control-row hidden-row" id="rowFree">
-        <label class="row-title">自由改变位置</label>
-        <div class="range-wrap">
-          <span style="font-size:12px;color:#8ca2b7">物体远</span>
-          <input id="objectPosRange" type="range" min="230" max="390" value="300">
-          <span style="font-size:12px;color:#8ca2b7">物体近</span>
-        </div>
-        <div class="range-wrap">
-          <span style="font-size:12px;color:#8ca2b7">屏近</span>
-          <input id="screenPosRange" type="range" min="230" max="380" value="300">
-          <span style="font-size:12px;color:#8ca2b7">屏远</span>
-        </div>
-      </div>
-
-      <div class="control-row hidden-row" id="rowHeight">
-        <label class="row-title">物体高度</label>
-        <div class="range-wrap"><input id="heightRange" type="range" min="40" max="80" value="60"></div>
-        <div class="control-help">只显示物高与像高，不显示物距、像距</div>
-      </div>
-    </div>
-    <div class="footer-note">小孔成像教学模型 · 几何光学近似 · 极小孔径下的衍射不作为本页主线</div>
-  </section>
+  </div>
 </div>
 
 <script>
@@ -270,7 +315,7 @@ input[type=range]{width:100%;accent-color:#59d8ff}
 var svg=document.getElementById("scene");
 var NS="http://www.w3.org/2000/svg";
 var state={
-  view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent",
+  view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent", strayLight:false,
   aperture:38, objectDist:300, screenDist:300, objectHeight:60,
   topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,
   yaw:-0.14,pitch:0.10,cameraScale:0.88,dragging:false,lastX:0,lastY:0
@@ -281,6 +326,7 @@ var modeText={
   size:"<strong>控制变量：</strong>固定物体、物体位置、光屏位置与材料，只改变孔的大小。观察亮度和清晰度如何同时变化。",
   shape:"<strong>控制变量：</strong>圆形、方形、三角形小孔始终保持相同面积。比较像的整体形状是否由小孔形状决定。",
   material:"<strong>探究目标：</strong>比较透明膜、半透明膜和不透明膜。区分“光是否到达光屏”和“观察者能否从这一侧看见像”。",
+  darkbox:"<strong>控制变量：</strong>保持物体、小孔、光屏不变，只比较暗箱完整与杂散光进入。重点观察图像对比度，而不是把“有无成像”混为一谈。",
   free:"<strong>自由探索：</strong>拖动物体位置、光屏位置与物体高度。页面只显示物体和像的大小数据，不显示物距、像距。"
 };
 var materialText={
@@ -628,6 +674,50 @@ function opticsModel(){
   var clarity=Math.round(Math.max(8,100-blur*12.5));
   return {scale:scale,blur:blur,brightness:brightness,clarity:clarity};
 }
+function drawHoleFocus(){
+  clear();
+  var g=E("g",{},svg);
+  E("rect",{x:0,y:0,width:1000,height:610,fill:"#062436"},g);
+  textEl(g,70,82,"看小孔",{fill:"#d9edf2","font-size":"21","font-weight":"800"});
+  textEl(g,70,108,"正对小孔片观察 · 形状变化时面积保持不变",{fill:"#799eae","font-size":"12","font-weight":"500"});
+  E("circle",{cx:500,cy:310,r:205,fill:"#5d7e91",stroke:"#a8c0cb","stroke-width":"4"},g);
+  E("circle",{cx:500,cy:310,r:190,fill:"#7494a4","fill-opacity":".35",stroke:"rgba(221,239,244,.17)","stroke-width":"1"},g);
+  var r=28+state.aperture*.34;
+  holeShape2D(500,310,r,g,"#02080c");
+  textEl(g,500,555,state.shape==="circle"?"圆形孔":state.shape==="square"?"方形孔":"三角形孔",{fill:"#dcebf0","font-size":"16","font-weight":"800","text-anchor":"middle"});
+  textEl(g,500,579,"当前孔面积在不同形状之间保持一致",{fill:"#7fa4b4","font-size":"11","font-weight":"500","text-anchor":"middle"});
+}
+function drawScreenFrontImage(g,cx,cy,scale,opacity){
+  opacity=opacity==null?.78:opacity;
+  var h=132*imageScale()*scale;
+  if(state.material==="opaque"&&!state.frontSide)return;
+  if(state.object==="arrow"){
+    line(g,[cx,cy+h*.45],[cx,cy-h*.45],{stroke:"#f4c552","stroke-width":"12","stroke-opacity":opacity});
+    poly(g,[[cx,cy-h*.52],[cx-18,cy-h*.28],[cx+18,cy-h*.28]],{fill:"#f4c552","fill-opacity":opacity});
+  }else if(state.object==="f"){
+    var t=textEl(g,cx-45,cy+52,"F",{fill:"#f2c75a","fill-opacity":opacity,"font-size":145*scale,"font-family":"Arial","font-weight":"900"});
+    t.setAttribute("transform","rotate(180 "+cx+" "+cy+")");
+  }else{
+    line(g,[cx,cy+h*.42],[cx,cy-h*.12],{stroke:"#eee0bd","stroke-width":"18","stroke-opacity":opacity});
+    E("ellipse",{cx:cx,cy:cy-h*.32,rx:15,ry:26,fill:"#ffb43f","fill-opacity":opacity},g);
+    E("ellipse",{cx:cx,cy:cy-h*.32,rx:34,ry:42,fill:"rgba(255,177,55,"+(opacity*.1)+")"},g);
+  }
+}
+function drawScreenFocus(){
+  clear();
+  var g=E("g",{},svg);
+  E("rect",{x:0,y:0,width:1000,height:610,fill:"#062436"},g);
+  textEl(g,70,82,"看光屏",{fill:"#d9edf2","font-size":"21","font-weight":"800"});
+  textEl(g,70,108,state.frontSide?"当前：查看光屏受光面":"当前：从暗箱外侧正对光屏",{fill:"#799eae","font-size":"12","font-weight":"500"});
+  var fill=state.material==="transparent"?"rgba(133,207,222,.18)":state.material==="translucent"?"#aeb9b2":"#252c31";
+  E("circle",{cx:500,cy:310,r:205,fill:fill,stroke:"#b9c8cb","stroke-width":"6"},g);
+  E("circle",{cx:500,cy:310,r:214,fill:"none",stroke:"#223746","stroke-width":"12"},g);
+  var op=state.material==="transparent"?.2:state.material==="translucent"?.84:(state.frontSide?.8:0);
+  if(state.strayLight)op*=.42;
+  drawScreenFrontImage(g,500,310,1.25,op);
+  if(state.strayLight)E("circle",{cx:500,cy:310,r:202,fill:"rgba(220,239,237,.48)"},g);
+  if(state.material==="opaque"&&!state.frontSide)textEl(g,500,315,"外侧看不到透射图像",{fill:"#d3dcde","font-size":"18","font-weight":"750","text-anchor":"middle"});
+}
 function draw2D(){
   clear();
   var g=E("g",{},svg);
@@ -714,11 +804,12 @@ function renderScreen(){
   surface.className="screen-surface "+state.material;
   var optics=opticsModel();
   var brightness=optics.brightness,clarity=optics.clarity;
-  var visible=1,extraBlur=0;
-  if(state.material==="transparent"){visible=.18;brightness*=.48;clarity*=.84}
-  if(state.material==="translucent"){visible=.88;extraBlur=.38}
-  if(state.material==="opaque"&&!state.frontSide){visible=0}
-  if(state.material==="opaque"&&state.frontSide){visible=.92;brightness*=.82}
+  var visible=1,extraBlur=0,contrast=92;
+  if(state.material==="transparent"){visible=.18;brightness*=.48;clarity*=.84;contrast=48}
+  if(state.material==="translucent"){visible=.88;extraBlur=.38;contrast=88}
+  if(state.material==="opaque"&&!state.frontSide){visible=0;contrast=0}
+  if(state.material==="opaque"&&state.frontSide){visible=.92;brightness*=.82;contrast=84}
+  if(state.strayLight){visible*=.55;contrast*=.34;}
   var blur=optics.blur+extraBlur;
   var heightPx=Math.max(80,Math.min(270,130*optics.scale));
   holder.innerHTML=makeObjectSVG(state.object,heightPx);
@@ -730,15 +821,25 @@ function renderScreen(){
   no.textContent="不透明膜不透光：从外侧不能看到透射图像";
   document.getElementById("brightnessBar").style.width=Math.max(3,Math.min(100,brightness))+"%";
   document.getElementById("clarityBar").style.width=Math.max(3,Math.min(100,clarity))+"%";
+  document.getElementById("contrastBar").style.width=Math.max(3,Math.min(100,contrast))+"%";
+  document.getElementById("ambientVeil").style.opacity=state.strayLight?".52":"0";
   document.getElementById("materialNote").textContent=materialText[state.material]+(state.frontSide?" 当前视角：受光面。":" 当前视角：外侧观察。");
   document.getElementById("screenSideBtn").textContent=state.frontSide?"返回外侧观察":"查看光屏受光面";
+  var hp=document.getElementById("holePreviewSvg"), ht=document.getElementById("holePreviewText");
+  if(state.shape==="circle"){hp.innerHTML='<circle cx="20" cy="20" r="11.3" fill="currentColor"/>';ht.textContent="圆形孔 · 面积保持不变";}
+  else if(state.shape==="square"){hp.innerHTML='<rect x="10" y="10" width="20" height="20" fill="currentColor"/>';ht.textContent="方形孔 · 面积保持不变";}
+  else{hp.innerHTML='<path d="M20 5 L37.5 35.3 L2.5 35.3 Z" fill="currentColor"/>';ht.textContent="三角形孔 · 面积保持不变";}
+  document.getElementById("ambientStatus").textContent=state.strayLight?"环境：杂散光进入":"环境：较暗";
 }
 function renderMetrics(){
   document.getElementById("objHeightText").textContent=(state.objectHeight/10).toFixed(1);
   document.getElementById("imgHeightText").textContent=(state.objectHeight/10*imageScale()).toFixed(1);
 }
 function render(){
-  if(state.view==="3d")draw3D();else draw2D();
+  if(state.view==="2d")draw2D();
+  else if(state.view==="hole")drawHoleFocus();
+  else if(state.view==="screen")drawScreenFocus();
+  else draw3D();
   renderScreen();renderMetrics();
   document.getElementById("cutBadge").classList.toggle("hidden",!state.cutaway);
   document.getElementById("areaBadge").classList.toggle("hidden",state.mode!=="shape");
@@ -746,20 +847,21 @@ function render(){
   document.getElementById("rayBtn").classList.toggle("active",state.showRays);
   document.getElementById("cutBtn").classList.toggle("active",state.cutaway);
   document.getElementById("explodeBtn").classList.toggle("active",state.exploded);
-  document.getElementById("viewBadge").textContent=state.view==="3d"?"3D装置观察":"2D正交光路";
+  document.getElementById("viewBadge").textContent=state.view==="3d"?"3D装置观察":state.view==="2d"?"2D正交光路":state.view==="hole"?"小孔正视":"光屏正视";
   document.getElementById("stageTip").textContent=state.view==="3d"?
     (state.exploded?"结构拆解只用于观察小孔片、暗箱筒体、光屏和固定圈的装配关系；此时暂停成像光路显示。":"拖动只改变观察方向，正交投影不会造成装置忽大忽小。剖开观察只改变教学视图，不改变实验本身。"):
-    "剖面图与3D装置共用同一组参数。淡色发散光表示物点向多个方向发光，被挡住的光在小孔板处终止。";
+    state.view==="2d"?"剖面图与3D装置共用同一组参数。淡色发散光表示物点向多个方向发光，被挡住的光在小孔板处终止。":state.view==="hole"?"正对小孔片观察形状与孔径；切换圆、方、三角时孔面积保持不变。":"正对光屏观察实际可见结果；可在右侧切换光屏材料和受光面。";
 }
 function updateModeUI(){
   document.getElementById("modeCopy").innerHTML=modeText[state.mode];
-  ["rowApertureSize","rowShape","rowMaterial","rowFree","rowHeight"].forEach(function(id){document.getElementById(id).classList.add("hidden-row")});
+  ["rowApertureSize","rowShape","rowMaterial","rowDarkbox","rowFree","rowHeight"].forEach(function(id){document.getElementById(id).classList.add("hidden-row")});
   document.getElementById("rowPoints").classList.remove("hidden-row");
   if(state.mode==="invert"){state.topRay=true;state.bottomRay=true;state.showRays=true}
   if(state.mode==="cause"){state.topRay=true;state.bottomRay=false;state.showRays=true}
   if(state.mode==="size")document.getElementById("rowApertureSize").classList.remove("hidden-row");
   if(state.mode==="shape")document.getElementById("rowShape").classList.remove("hidden-row");
   if(state.mode==="material")document.getElementById("rowMaterial").classList.remove("hidden-row");
+  if(state.mode==="darkbox")document.getElementById("rowDarkbox").classList.remove("hidden-row");
   if(state.mode==="free"){
     document.getElementById("rowFree").classList.remove("hidden-row");
     document.getElementById("rowHeight").classList.remove("hidden-row");
@@ -775,9 +877,23 @@ function segBind(id,key){
     render();
   });
 }
-document.getElementById("btn3d").onclick=function(){state.view="3d";this.classList.add("active");document.getElementById("btn2d").classList.remove("active");render()};
-document.getElementById("btn2d").onclick=function(){state.view="2d";this.classList.add("active");document.getElementById("btn3d").classList.remove("active");render()};
-document.getElementById("cameraBtn").onclick=function(){state.yaw=-0.14;state.pitch=0.10;state.cameraScale=.88;render()};
+function setView(v){
+  state.view=v;
+  ["btn3d","btn2d","btnHole","btnScreen"].forEach(function(id){
+    var b=document.getElementById(id);if(b)b.classList.toggle("active",
+      (id==="btn3d"&&v==="3d")||(id==="btn2d"&&v==="2d")||(id==="btnHole"&&v==="hole")||(id==="btnScreen"&&v==="screen"));
+  });
+  render();
+}
+document.getElementById("btn3d").onclick=function(){setView("3d")};
+document.getElementById("btn2d").onclick=function(){setView("2d")};
+document.getElementById("btnHole").onclick=function(){setView("hole")};
+document.getElementById("btnScreen").onclick=function(){setView("screen")};
+function resetCamera(){state.yaw=-0.14;state.pitch=0.10;state.cameraScale=.88;if(state.view!=="3d")setView("3d");else render();}
+document.getElementById("cameraBtn").onclick=resetCamera;
+document.getElementById("cameraInlineBtn").onclick=resetCamera;
+document.getElementById("zoomIn").onclick=function(){state.cameraScale=Math.min(1.15,state.cameraScale+.06);render()};
+document.getElementById("zoomOut").onclick=function(){state.cameraScale=Math.max(.66,state.cameraScale-.06);render()};
 document.getElementById("explodeBtn").onclick=function(){state.exploded=!state.exploded;if(state.exploded)state.cutaway=false;render()};
 document.getElementById("cutBtn").onclick=function(){state.cutaway=!state.cutaway;if(state.cutaway)state.exploded=false;render()};
 document.getElementById("rayBtn").onclick=function(){state.showRays=!state.showRays;render()};
@@ -795,19 +911,29 @@ document.getElementById("tabs").onclick=function(e){
   updateModeUI();render();
 };
 segBind("objectSeg","object");segBind("shapeSeg","shape");segBind("materialSeg","material");
+document.getElementById("straySeg").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-value]");if(!b)return;
+  state.strayLight=b.dataset.value==="leak";
+  Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("active",x===b)});
+  render();
+});
 
 document.getElementById("resetBtn").onclick=function(){
-  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.14,pitch:.10,cameraScale:.88});
+  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",strayLight:false,aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.14,pitch:.10,cameraScale:.88});
   document.getElementById("apertureRange").value=38;document.getElementById("objectPosRange").value=320;document.getElementById("screenPosRange").value=300;document.getElementById("heightRange").value=60;
   document.querySelectorAll(".segment").forEach(function(seg){var bs=seg.querySelectorAll("button[data-value]");bs.forEach(function(b){b.classList.toggle("active",b.dataset.value===state.object||b.dataset.value===state.shape||b.dataset.value===state.material)})});
   document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.mode==="cause")});
-  document.getElementById("btn3d").classList.add("active");document.getElementById("btn2d").classList.remove("active");
+  document.getElementById("btn3d").classList.add("active");["btn2d","btnHole","btnScreen"].forEach(function(id){document.getElementById(id).classList.remove("active")});
+  document.querySelectorAll("#straySeg button").forEach(function(b){b.classList.toggle("active",b.dataset.value==="closed")});
   updateModeUI();render();
 };
 document.getElementById("fullscreenBtn").onclick=function(){
   if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();
   else document.exitFullscreen&&document.exitFullscreen();
 };
+document.addEventListener("fullscreenchange",function(){
+  document.getElementById("fullscreenBtn").textContent=document.fullscreenElement?"⤢ 退出专注":"⛶ 进入专注";
+});
 
 svg.addEventListener("click",function(e){
   var p=e.target&&e.target.getAttribute&&e.target.getAttribute("data-point");
