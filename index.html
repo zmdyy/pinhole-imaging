@@ -143,6 +143,7 @@ input[type=range]{width:100%;accent-color:#59d8ff}
         <span id="viewBadge" class="badge">3D装置观察</span>
         <span id="cutBadge" class="badge warn hidden">教学剖视：真实暗箱外壳不透明</span>
         <span id="areaBadge" class="badge good hidden">孔面积保持不变</span>
+        <span id="explodeBadge" class="badge info hidden">结构拆解：仅观察部件，不代表实验状态</span>
         <div class="stage-tools">
           <button id="cameraBtn">重置视角</button>
           <button id="cutBtn">剖开观察</button>
@@ -270,7 +271,7 @@ var NS="http://www.w3.org/2000/svg";
 var state={
   view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent",
   aperture:38, objectDist:300, screenDist:300, objectHeight:60,
-  topRay:true,bottomRay:false,cutaway:false,showRays:true,frontSide:false,
+  topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,
   yaw:-0.14,pitch:0.10,cameraScale:0.88,dragging:false,lastX:0,lastY:0
 };
 var modeText={
@@ -375,11 +376,63 @@ function drawBox3D(g,cx,cy0,cz,sx,sy0,sz,baseColor){
     poly(g,f.pts,{fill:"rgb("+(lum-8)+","+lum+","+(lum+12)+")",stroke:"#496176","stroke-width":"1"});
   });
 }
+function svgClipFromPoints(defs,id,pts){
+  var cp=E("clipPath",{id:id},defs);
+  poly(cp,pts,{fill:"#fff"});
+  return id;
+}
+function drawScreenTexture3D(g,defs,x,r,material){
+  var pts=ring3D(x,r,0,0,72), clipId="screenClip3D";
+  svgClipFromPoints(defs,clipId,pts);
+  var tg=E("g",{"clip-path":"url(#"+clipId+")"},g);
+  var center=project(x,0,0);
+  // 三类材料不只是透明度不同：透明膜有镜面高光，半透明膜有细颗粒，不透明膜是哑光表面。
+  if(material==="transparent"){
+    for(var i=-4;i<=4;i++){
+      var a=project(x,-r*.82+i*12,-r*.72),b=project(x,r*.82+i*12,r*.72);
+      line(tg,a,b,{stroke:"rgba(219,249,255,.13)","stroke-width":i===0?"7":"2"});
+    }
+    E("ellipse",{cx:center[0]-18,cy:center[1]-30,rx:42,ry:18,fill:"rgba(230,252,255,.08)"},tg);
+  }else if(material==="translucent"){
+    for(var j=0;j<110;j++){
+      var ang=j*2.399, rr=r*.88*Math.sqrt((j+.5)/110);
+      var p=project(x,rr*Math.cos(ang),rr*Math.sin(ang));
+      E("circle",{cx:p[0],cy:p[1],r:(j%3===0?1.15:.75),fill:"rgba(255,255,242,.15)"},tg);
+    }
+    for(var k=-4;k<=4;k++){
+      var p1=project(x,-r*.82,k*20),p2=project(x,r*.82,k*20);
+      line(tg,p1,p2,{stroke:"rgba(255,255,245,.045)","stroke-width":"1"});
+    }
+  }else{
+    for(var q=-5;q<=5;q++){
+      var aa=project(x,-r*.82,q*18),bb=project(x,r*.82,q*18);
+      line(tg,aa,bb,{stroke:"rgba(255,255,255,.025)","stroke-width":"1"});
+    }
+  }
+}
+function drawThickRing3D(g,x,r,thickness,color){
+  var n=64,parts=[];
+  var x2=x+thickness;
+  for(var i=0;i<n;i++){
+    var a1=Math.PI*2*i/n,a2=Math.PI*2*(i+1)/n;
+    var ps=[
+      project(x,r*Math.cos(a1),r*Math.sin(a1)),
+      project(x2,r*Math.cos(a1),r*Math.sin(a1)),
+      project(x2,r*Math.cos(a2),r*Math.sin(a2)),
+      project(x,r*Math.cos(a2),r*Math.sin(a2))
+    ];
+    parts.push({pts:ps,depth:avgDepth(ps)});
+  }
+  parts.sort(function(a,b){return a.depth-b.depth}).forEach(function(s){
+    poly(g,s.pts,{fill:color||"#1a2835",stroke:"rgba(130,155,174,.2)","stroke-width":".6"});
+  });
+  poly(g,ring3D(x,r,0,0,n),{fill:"none",stroke:"#27394a","stroke-width":"8"});
+  poly(g,ring3D(x2,r,0,0,n),{fill:"none",stroke:"#8096a6","stroke-width":"2"});
+}
 function drawCylinderShell(g,x1,x2,r,cy0){
-  var n=56,parts=[];
+  var n=64,parts=[];
   for(var i=0;i<n;i++){
     var a1=Math.PI*2*i/n,a2=Math.PI*2*(i+1)/n,am=(a1+a2)/2;
-    // 剖视时移除靠观察者的一半圆筒，而不是把整个暗箱误画成透明盒。
     if(state.cutaway && Math.sin(am)>-0.08)continue;
     var p=[
       project(x1,cy0+r*Math.cos(a1),r*Math.sin(a1)),
@@ -387,14 +440,22 @@ function drawCylinderShell(g,x1,x2,r,cy0){
       project(x2,cy0+r*Math.cos(a2),r*Math.sin(a2)),
       project(x1,cy0+r*Math.cos(a2),r*Math.sin(a2))
     ];
-    var light=118+Math.round(42*(.5+.5*Math.cos(am-.65)));
-    parts.push({pts:p,depth:avgDepth(p),fill:"rgb("+Math.max(78,light-16)+","+Math.max(92,light)+","+Math.min(205,light+16)+")"});
+    // 暗箱采用深色哑光材质，仅保留窄高光带来表现圆柱体，而不是亮灰塑料感。
+    var highlight=Math.pow(Math.max(0,Math.cos(am-.72)),10);
+    var base=22+Math.round(highlight*36);
+    var fill="rgb("+base+","+(base+8)+","+(base+14)+")";
+    parts.push({pts:p,depth:avgDepth(p),fill:fill,hi:highlight});
   }
   parts.sort(function(a,b){return a.depth-b.depth}).forEach(function(s){
-    poly(g,s.pts,{fill:s.fill,"fill-opacity":state.cutaway?.42:.96,stroke:"rgba(139,167,184,.18)","stroke-width":".7"});
+    poly(g,s.pts,{fill:s.fill,"fill-opacity":state.cutaway?.52:.985,stroke:"rgba(92,119,140,.12)","stroke-width":".55"});
   });
-  poly(g,ring3D(x1,r,cy0,0,72),{fill:"none",stroke:"#7893a5","stroke-width":"2"});
-  poly(g,ring3D(x2,r,cy0,0,72),{fill:"none",stroke:"#9dafba","stroke-width":"2"});
+  poly(g,ring3D(x1,r,cy0,0,72),{fill:"none",stroke:"#40576a","stroke-width":"2.3"});
+  poly(g,ring3D(x2,r,cy0,0,72),{fill:"none",stroke:"#586f80","stroke-width":"2.1"});
+  // 圆筒纵向细高光，增强真实金属/塑料管的体积感。
+  [-.76,-.69].forEach(function(a){
+    var p1=project(x1,cy0+r*Math.cos(a),r*Math.sin(a)),p2=project(x2,cy0+r*Math.cos(a),r*Math.sin(a));
+    line(g,p1,p2,{stroke:"rgba(151,184,205,.12)","stroke-width":a===-.76?"4":"1"});
+  });
 }
 function holePoints3D(x,r){
   var pts=[],i,a,s,h;
@@ -415,8 +476,8 @@ function drawRoundPlate(g,x,r,fill,stroke,width){
   return pts;
 }
 function drawRetainingRing(g,x,r){
-  poly(g,ring3D(x,r,0,0,72),{fill:"none",stroke:"#1f2d3b","stroke-width":"10","stroke-linejoin":"round"});
-  poly(g,ring3D(x+.8,r-3,0,0,72),{fill:"none",stroke:"#708898","stroke-width":"2","stroke-linejoin":"round"});
+  drawThickRing3D(g,x,r,12,"#17242f");
+  poly(g,ring3D(x+12,r-9,0,0,72),{fill:"none",stroke:"#7e929f","stroke-width":"2"});
 }
 function drawObject3D(g){
   var x=-state.objectDist;
@@ -439,50 +500,64 @@ function drawObject3D(g){
   E("circle",{cx:ptBot[0],cy:ptBot[1],r:state.bottomRay?7:5,fill:state.bottomRay?"#59d8ff":"#5e6c78",stroke:"#fff","stroke-width":"1.5","data-point":"bottom",style:"cursor:pointer"},g);
 }
 function drawRays3D(g){
-  if(!state.showRays)return;
+  if(!state.showRays||state.exploded)return;
   var x=-state.objectDist;
   var topY=-120+state.objectHeight*2.05;
   var sources=[];
   if(state.topRay)sources.push({p:[x,topY,0],color:"#ffcf5a"});
   if(state.bottomRay)sources.push({p:[x,-120,0],color:"#59d8ff"});
-  var blockers=[[-92,-110],[-70,92],[80,-100],[106,75],[-20,118]];
+  var blockers=[[-95,-95],[-82,68],[72,-104],[104,55],[-22,111],[48,118]];
   sources.forEach(function(s){
+    // 先显示“物点向许多方向传播”，多数光线在小孔片处被挡住。
     blockers.forEach(function(q){
       var a=project(s.p[0],s.p[1],s.p[2]),b=project(0,q[0],q[1]);
-      line(g,a,b,{stroke:s.color,"stroke-width":"1.2","stroke-opacity":".18"});
+      line(g,a,b,{stroke:s.color,"stroke-width":"1.1","stroke-opacity":".13"});
     });
-    var rr=holeSize()*0.50;
-    [-1,0,1].forEach(function(k){
-      var ay=k*rr;
-      var a=project(s.p[0],s.p[1],0),h=project(0,ay,0);
-      line(g,a,h,{stroke:s.color,"stroke-width":"1.7","stroke-opacity":".65"});
-      var t=(state.screenDist)/(state.objectDist);
-      var screenY=ay+(ay-s.p[1])*t;
-      var end=project(state.screenDist,screenY,0);
-      line(g,h,end,{stroke:s.color,"stroke-width":"1.7","stroke-opacity":".72"});
+    // 穿孔光线在 y/z 两方向展开，形成真正的空间光束而不是三条共面的线。
+    var rr=holeSize()*.54;
+    var holes=[[0,0],[rr,0],[-rr,0],[0,rr],[0,-rr],[rr*.62,rr*.62],[-rr*.62,-rr*.62]];
+    holes.forEach(function(hq,idx){
+      var hy=hq[0],hz=hq[1];
+      var a=project(s.p[0],s.p[1],s.p[2]),h=project(0,hy,hz);
+      line(g,a,h,{stroke:s.color,"stroke-width":idx===0?"1.9":"1.15","stroke-opacity":idx===0?".70":".38"});
+      var t=state.screenDist/state.objectDist;
+      var screenY=hy+(hy-s.p[1])*t;
+      var screenZ=hz+(hz-s.p[2])*t;
+      var end=project(state.screenDist,screenY,screenZ);
+      line(g,h,end,{stroke:s.color,"stroke-width":idx===0?"1.9":"1.15","stroke-opacity":idx===0?".76":".42"});
     });
   });
 }
 function drawImageOn3DScreen(g){
-  var scale=imageScale();
-  var topObj=-120+state.objectHeight*2.05, bottomObj=-120;
-  var topImg=-topObj*scale, bottomImg=-bottomObj*scale;
-  var optics=opticsModel();
-  var vis=state.material==="transparent"?.18:state.material==="translucent"?.72:(state.cutaway||state.frontSide?.76:0);
+  if(state.exploded)return;
+  var scale=imageScale(), optics=opticsModel();
+  var vis=state.material==="transparent"?.16:state.material==="translucent"?.66:(state.frontSide?.72:0);
   if(!vis)return;
+  var x=state.screenDist-1;
+  var objBottom=-120, objTop=-120+state.objectHeight*2.05;
+  var imgBottom=-objBottom*scale, imgTop=-objTop*scale;
   var col=state.object==="candle"?"#ffbd4a":"#ffd05b";
-  var pTop=project(state.screenDist-1,topImg,0),pBot=project(state.screenDist-1,bottomImg,0);
+  function seg(y1,z1,y2,z2,w,op){
+    line(g,project(x,y1,z1),project(x,y2,z2),{stroke:col,"stroke-width":w||6,"stroke-opacity":op==null?vis:op,"stroke-linecap":"round"});
+  }
   if(state.object==="arrow"){
-    line(g,pBot,pTop,{stroke:col,"stroke-width":Math.max(5,10-optics.blur),"stroke-opacity":vis});
-    poly(g,[[pTop[0],pTop[1]+14],[pTop[0]-14,pTop[1]-10],[pTop[0]+14,pTop[1]-10]],{fill:col,"fill-opacity":vis});
+    seg(imgBottom,0,imgTop,0,7+Math.min(4,optics.blur),vis);
+    var dir=imgTop<imgBottom?-1:1;
+    seg(imgTop,0,imgTop-dir*22,-18,6,vis);
+    seg(imgTop,0,imgTop-dir*22,18,6,vis);
   }else if(state.object==="f"){
-    var mid=project(state.screenDist-1,(topImg+bottomImg)/2,0);
-    var t=textEl(g,mid[0]-25,mid[1]+30,"F",{fill:col,"fill-opacity":vis,"font-size":Math.max(42,70*scale),"font-family":"Arial","font-weight":"900"});
-    t.setAttribute("transform","rotate(180 "+mid[0]+" "+mid[1]+")");
+    // F 的每条笔画都画在真实光屏平面上，再绕光轴180°，旋转视角时不会“贴在屏幕外面”。
+    var h=Math.abs(imgTop-imgBottom), y0=(imgTop+imgBottom)/2;
+    var topY=y0-h*.48,botY=y0+h*.48;
+    seg(topY,22,botY,22,8,vis);
+    seg(topY,22,topY,-24,8,vis);
+    seg(y0-2,22,y0-2,-12,8,vis);
   }else{
-    line(g,pBot,project(state.screenDist-1,topImg+(bottomImg-topImg)*.67,0),{stroke:"#f0dfbd","stroke-width":"12","stroke-opacity":vis});
-    E("ellipse",{cx:pTop[0],cy:pTop[1],rx:8+optics.blur,ry:13+optics.blur,fill:col,"fill-opacity":vis*.9},g);
-    E("ellipse",{cx:pTop[0],cy:pTop[1]+1,rx:18+optics.blur*1.5,ry:22+optics.blur*1.5,fill:"rgba(255,177,55,"+(vis*.12)+")"},g);
+    var candleTop=Math.min(imgTop,imgBottom), candleBottom=Math.max(imgTop,imgBottom);
+    seg(candleBottom,0,candleTop+28,0,10,vis*.82);
+    var flame=project(x,candleTop+9,0);
+    E("ellipse",{cx:flame[0],cy:flame[1],rx:7+optics.blur*.8,ry:12+optics.blur,fill:"#ffb43f","fill-opacity":vis},g);
+    E("ellipse",{cx:flame[0],cy:flame[1],rx:17+optics.blur*1.2,ry:20+optics.blur*1.2,fill:"rgba(255,177,55,"+(vis*.10)+")"},g);
   }
 }
 function draw3D(){
@@ -493,42 +568,53 @@ function draw3D(){
   var g=E("g",{},svg);
   drawGrid(g);
 
-  // 参考视频：圆形小孔片/筒底 + 不透光圆筒 + 圆形光屏 + 固定圈。
-  var r=132, bodyStart=8, bodyEnd=Math.max(92,state.screenDist-18), screenX=state.screenDist;
-  var floorY=-153;
+  var r=132, floorY=-153;
+  var gap=state.exploded?42:0;
+  var plateX=state.exploded?-78:0;
+  var bodyStart=state.exploded?20:8;
+  var bodyEnd=Math.max(92,state.screenDist-18)+(state.exploded?gap*.45:0);
+  var screenX=state.screenDist+(state.exploded?gap*1.55:0);
+  var ringX=screenX+10+(state.exploded?gap*.95:0);
 
-  // 支脚在圆筒下方，保持装置具有“真实实验器材”的结构感。
+  // 支架随圆筒而动；拆解状态强调部件组成，不显示成像光路。
   drawBox3D(g,Math.max(72,bodyEnd*.40),floorY+10,58,54,20,46,"#38536a");
   drawBox3D(g,Math.max(142,bodyEnd*.78),floorY+10,58,54,20,46,"#38536a");
 
-  // 先画光线，再覆盖不透光外壳：装配状态下内部光路不会“穿墙可见”；
-  // 剖开观察后，被移除的半侧外壳会自然露出内部光路。
-  drawRays3D(g);
-
-  // 圆筒主体：剖视时只去掉靠观察者的一半外壳。
+  if(!state.exploded)drawRays3D(g);
   drawCylinderShell(g,bodyStart,bodyEnd,r,0);
 
-  // 后端光屏：圆形而不是矩形面板。
-  var screenFill=state.material==="transparent"?"rgba(152,215,226,.16)":state.material==="translucent"?"rgba(226,231,211,.82)":"rgba(74,82,88,.98)";
-  drawRoundPlate(g,screenX,r-7,screenFill,"#c3d0d4",2.2);
-  drawImageOn3DScreen(g);
-  drawRetainingRing(g,screenX+10,r+1);
+  var screenFill=state.material==="transparent"?"rgba(154,221,233,.13)":state.material==="translucent"?"rgba(225,232,214,.78)":"rgba(54,61,67,.99)";
+  drawRoundPlate(g,screenX,r-7,screenFill,state.material==="transparent"?"#88acbc":"#c6d0cf",2.2);
+  drawScreenTexture3D(g,defs,screenX,r-10,state.material);
+  if(!state.exploded)drawImageOn3DScreen(g);
+  drawRetainingRing(g,ringX,r+1);
 
-  // 前端小孔片（筒底）：独立圆片，中央小孔按等面积规则切换形状。
-  drawRoundPlate(g,0,r,"rgba(145,179,194,.96)","#9bb5c3",2.2);
-  var hc=project(0,0,0),hr=holeSize();
-  poly(g,holePoints3D(-.6,hr),{fill:"#02070b",stroke:"#071018","stroke-width":"1"});
+  // 小孔片做成较厚的独立金属圆片，边缘与视频中的前端筒底更接近。
+  drawThickRing3D(g,plateX,r,7,"#2c4658");
+  drawRoundPlate(g,plateX+1,r-5,"rgba(92,125,145,.98)","#9bb3c1",1.8);
+  var hc=project(plateX,0,0),hr=holeSize();
+  poly(g,holePoints3D(plateX-.4,hr),{fill:"#02070b",stroke:"#071018","stroke-width":"1"});
 
   drawObject3D(g);
 
-  // 标签位置跟随三维点，但整体保持简洁，接近视频默认视图。
   var objLabel=project(-state.objectDist,-154,0);
   textEl(g,objLabel[0]-18,objLabel[1]+23,"物体",{fill:"#d8e6f2","font-size":"13"});
-  var holeLabel=project(0,-r-18,0);
-  textEl(g,holeLabel[0]-18,holeLabel[1]+12,"小孔",{fill:"#d8e6f2","font-size":"13"});
-  var screenLabel=project(screenX,-r-18,0);
-  textEl(g,screenLabel[0]-18,screenLabel[1]+12,"光屏",{fill:"#d8e6f2","font-size":"13"});
-  textEl(g,710,82,"拖动旋转视角 · 正交投影",{fill:"#7390a9","font-size":"12","font-weight":"500"});
+
+  if(state.exploded){
+    var lp=project(plateX,-r-18,0),lb=project((bodyStart+bodyEnd)/2,-r-18,0),ls=project(screenX,-r-18,0),lr=project(ringX,-r-18,0);
+    textEl(g,lp[0]-24,lp[1]+10,"小孔片",{fill:"#a9d8ff","font-size":"12"});
+    textEl(g,lb[0]-24,lb[1]+10,"暗箱筒体",{fill:"#a9d8ff","font-size":"12"});
+    textEl(g,ls[0]-18,ls[1]+10,"光屏",{fill:"#a9d8ff","font-size":"12"});
+    textEl(g,lr[0]-22,lr[1]+10,"固定圈",{fill:"#a9d8ff","font-size":"12"});
+    var axisA=project(plateX-35,0,0),axisB=project(ringX+28,0,0);
+    line(g,axisA,axisB,{stroke:"rgba(108,194,231,.34)","stroke-width":"1.4","stroke-dasharray":"8 7"});
+    textEl(g,690,82,"结构拆解 · 各部件沿光轴分离",{fill:"#9fd7f4","font-size":"12","font-weight":"500"});
+  }else{
+    var holeLabel=project(plateX,-r-18,0),screenLabel=project(screenX,-r-18,0);
+    textEl(g,holeLabel[0]-18,holeLabel[1]+12,"小孔",{fill:"#d8e6f2","font-size":"13"});
+    textEl(g,screenLabel[0]-18,screenLabel[1]+12,"光屏",{fill:"#d8e6f2","font-size":"13"});
+    textEl(g,710,82,"拖动旋转视角 · 正交投影",{fill:"#7390a9","font-size":"12","font-weight":"500"});
+  }
 }
 function objYTop2D(){
   return 320-state.objectHeight*1.75;
@@ -655,11 +741,13 @@ function render(){
   renderScreen();renderMetrics();
   document.getElementById("cutBadge").classList.toggle("hidden",!state.cutaway);
   document.getElementById("areaBadge").classList.toggle("hidden",state.mode!=="shape");
+  document.getElementById("explodeBadge").classList.toggle("hidden",!state.exploded);
   document.getElementById("rayBtn").classList.toggle("active",state.showRays);
   document.getElementById("cutBtn").classList.toggle("active",state.cutaway);
+  document.getElementById("explodeBtn").classList.toggle("active",state.exploded);
   document.getElementById("viewBadge").textContent=state.view==="3d"?"3D装置观察":"2D正交光路";
   document.getElementById("stageTip").textContent=state.view==="3d"?
-    "拖动只改变观察方向，正交投影不会造成装置忽大忽小。剖开观察只改变教学视图，不改变实验本身。":
+    (state.exploded?"结构拆解只用于观察小孔片、暗箱筒体、光屏和固定圈的装配关系；此时暂停成像光路显示。":"拖动只改变观察方向，正交投影不会造成装置忽大忽小。剖开观察只改变教学视图，不改变实验本身。"):
     "剖面图与3D装置共用同一组参数。淡色发散光表示物点向多个方向发光，被挡住的光在小孔板处终止。";
 }
 function updateModeUI(){
@@ -689,7 +777,8 @@ function segBind(id,key){
 document.getElementById("btn3d").onclick=function(){state.view="3d";this.classList.add("active");document.getElementById("btn2d").classList.remove("active");render()};
 document.getElementById("btn2d").onclick=function(){state.view="2d";this.classList.add("active");document.getElementById("btn3d").classList.remove("active");render()};
 document.getElementById("cameraBtn").onclick=function(){state.yaw=-0.14;state.pitch=0.10;state.cameraScale=.88;render()};
-document.getElementById("cutBtn").onclick=function(){state.cutaway=!state.cutaway;render()};
+document.getElementById("explodeBtn").onclick=function(){state.exploded=!state.exploded;if(state.exploded)state.cutaway=false;render()};
+document.getElementById("cutBtn").onclick=function(){state.cutaway=!state.cutaway;if(state.cutaway)state.exploded=false;render()};
 document.getElementById("rayBtn").onclick=function(){state.showRays=!state.showRays;render()};
 document.getElementById("topPointBtn").onclick=function(){state.topRay=!state.topRay;this.classList.toggle("active",state.topRay);render()};
 document.getElementById("bottomPointBtn").onclick=function(){state.bottomRay=!state.bottomRay;this.classList.toggle("active",state.bottomRay);render()};
@@ -707,7 +796,7 @@ document.getElementById("tabs").onclick=function(e){
 segBind("objectSeg","object");segBind("shapeSeg","shape");segBind("materialSeg","material");
 
 document.getElementById("resetBtn").onclick=function(){
-  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,showRays:true,frontSide:false,yaw:-.14,pitch:.10,cameraScale:.88});
+  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.14,pitch:.10,cameraScale:.88});
   document.getElementById("apertureRange").value=38;document.getElementById("objectPosRange").value=320;document.getElementById("screenPosRange").value=300;document.getElementById("heightRange").value=60;
   document.querySelectorAll(".segment").forEach(function(seg){var bs=seg.querySelectorAll("button[data-value]");bs.forEach(function(b){b.classList.toggle("active",b.dataset.value===state.object||b.dataset.value===state.shape||b.dataset.value===state.material)})});
   document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.mode==="cause")});
