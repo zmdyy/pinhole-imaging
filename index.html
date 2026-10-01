@@ -500,6 +500,10 @@ function draw3D(){
   drawBox3D(g,Math.max(72,bodyEnd*.40),floorY+10,58,54,20,46,"#38536a");
   drawBox3D(g,Math.max(142,bodyEnd*.78),floorY+10,58,54,20,46,"#38536a");
 
+  // 先画光线，再覆盖不透光外壳：装配状态下内部光路不会“穿墙可见”；
+  // 剖开观察后，被移除的半侧外壳会自然露出内部光路。
+  drawRays3D(g);
+
   // 圆筒主体：剖视时只去掉靠观察者的一半外壳。
   drawCylinderShell(g,bodyStart,bodyEnd,r,0);
 
@@ -514,7 +518,6 @@ function draw3D(){
   var hc=project(0,0,0),hr=holeSize();
   poly(g,holePoints3D(-.6,hr),{fill:"#02070b",stroke:"#071018","stroke-width":"1"});
 
-  drawRays3D(g);
   drawObject3D(g);
 
   // 标签位置跟随三维点，但整体保持简洁，接近视频默认视图。
