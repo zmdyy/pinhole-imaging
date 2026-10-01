@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小孔成像 · 交互教学演示</title>
+<style>
+:root{
+  --bg:#07101d;--panel:#0c1727;--panel2:#111f33;--line:#21324a;--text:#eef6ff;
+  --muted:#9fb2c8;--cyan:#59d8ff;--amber:#ffcf5a;--red:#ff667c;--green:#64e0a3;
+  --shadow:0 18px 48px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at 45% 0,#12223a 0,#07101d 48%,#050b14 100%);color:var(--text);font-family:Inter,"Microsoft YaHei","PingFang SC",system-ui,sans-serif;overflow-x:hidden}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;padding:14px 16px 18px}
+.topbar{height:62px;display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:290px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#153655,#0d2036);box-shadow:inset 0 0 0 1px #2d506f;position:relative}
+.logo:before{content:"";position:absolute;left:20px;top:6px;width:2px;height:30px;background:#74e0ff}
+.logo:after{content:"";position:absolute;left:9px;top:20px;width:24px;height:2px;background:linear-gradient(90deg,#ffcf5a,#74e0ff)}
+.title h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.04em}
+.title p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.view-switch{display:flex;background:#081421;border:1px solid var(--line);border-radius:13px;padding:4px;margin-left:auto}
+.view-switch button,.ghost-btn{border:0;color:#b7c9da;background:transparent;padding:9px 15px;border-radius:10px;font-weight:700}
+.view-switch button.active{background:#173149;color:#fff;box-shadow:inset 0 0 0 1px #285270}
+.ghost-btn{border:1px solid var(--line);background:#0b1725}
+.ghost-btn:hover{border-color:#36526f;color:#fff}
+
+.main-grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:12px}
+.stage-card,.screen-card,.control-card{background:linear-gradient(180deg,rgba(15,30,49,.96),rgba(8,19,33,.97));border:1px solid #1e3148;border-radius:18px;box-shadow:var(--shadow)}
+.stage-card{position:relative;min-height:610px;overflow:hidden}
+.stage-head{position:absolute;z-index:6;left:14px;right:14px;top:12px;display:flex;align-items:center;gap:8px;pointer-events:none}
+.badge{font-size:12px;border:1px solid #2b4865;background:rgba(7,18,31,.88);padding:6px 9px;border-radius:999px;color:#c5d6e7;backdrop-filter:blur(10px)}
+.badge.warn{border-color:#6b572d;color:#ffe298}
+.badge.good{border-color:#235b47;color:#8cf0be}
+.badge.hidden{display:none}
+.stage-tools{margin-left:auto;pointer-events:auto;display:flex;gap:7px}
+.stage-tools button{border:1px solid #29415b;background:rgba(9,21,36,.9);color:#cfe0ef;border-radius:10px;padding:7px 10px}
+.stage-tools button.active{border-color:#57bddd;color:#fff;background:#113047}
+svg#scene{width:100%;height:610px;display:block;touch-action:none}
+.stage-footer{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:10px;align-items:flex-end;pointer-events:none}
+.readout{pointer-events:auto;display:flex;gap:8px;background:rgba(6,15,27,.88);border:1px solid #233a53;border-radius:14px;padding:8px;backdrop-filter:blur(8px)}
+.metric{min-width:118px;padding:8px 11px;border-radius:10px;background:#0f1d2e;border:1px solid #20344c}
+.metric .k{font-size:11px;color:#89a1b8}
+.metric .v{font-size:22px;font-weight:800;margin-top:2px}
+.stage-tip{margin-left:auto;max-width:410px;background:rgba(6,15,27,.88);border:1px solid #233a53;border-radius:13px;padding:10px 12px;color:#c6d7e8;font-size:13px;line-height:1.55;backdrop-filter:blur(8px)}
+
+.screen-card{padding:14px;display:flex;flex-direction:column;min-height:610px}
+.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.panel-title h2{font-size:16px;margin:0}
+.eye{font-size:12px;color:#b7c9dc;display:flex;align-items:center;gap:5px}
+.screen-wrap{position:relative;flex:1;min-height:355px;border-radius:16px;border:1px solid #31445a;background:#060a0f;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 60px rgba(0,0,0,.78)}
+.screen-surface{position:absolute;inset:18px;border-radius:10px;background:
+  radial-gradient(circle at 40% 38%,rgba(255,255,255,.05),transparent 26%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px),
+  #15191c;overflow:hidden}
+.screen-surface.translucent{background:
+  radial-gradient(circle at 44% 38%,rgba(255,255,255,.14),transparent 34%),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.032) 0 1px,transparent 1px 3px),
+  #b8c2c1}
+.screen-surface.transparent{background:
+  linear-gradient(135deg,rgba(120,170,190,.09),rgba(255,255,255,.02)),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 7px),
+  #172027}
+.screen-surface.opaque{background:#20252a}
+.image-holder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform:rotate(180deg);transform-origin:50% 50%}
+.image-holder svg{overflow:visible}
+.no-image{position:absolute;left:20px;right:20px;top:50%;transform:translateY(-50%);text-align:center;color:#b5c2cf;font-weight:700;line-height:1.6;text-shadow:0 2px 7px #000}
+.material-note{margin-top:10px;border-radius:12px;background:#0c1929;border:1px solid #20364f;padding:10px 11px;font-size:12px;line-height:1.55;color:#b9cbdb;min-height:58px}
+.side-btn{margin-top:10px;width:100%;border:1px solid #29465f;background:#102338;color:#d7e8f7;border-radius:10px;padding:9px 12px;font-weight:700}
+.indicators{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.indicator{border:1px solid #20364e;background:#0b1726;padding:9px;border-radius:11px}
+.indicator label{font-size:11px;color:#91a7bc}
+.bar{height:7px;border-radius:99px;background:#14273b;margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#59d8ff,#64e0a3);border-radius:inherit;transition:.25s width}
+
+.controls{margin-top:12px}
+.inquiry-tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:10px}
+.inquiry-tabs button{border:1px solid #233951;background:#0c1929;color:#a9bed1;border-radius:12px;padding:10px 8px;font-size:13px;font-weight:700;min-height:48px}
+.inquiry-tabs button.active{background:#16314a;border-color:#3e7398;color:#fff}
+.control-card{padding:14px}
+.control-row{display:flex;align-items:center;gap:12px;min-height:52px}
+.control-row + .control-row{border-top:1px solid rgba(37,56,77,.7)}
+.control-row label.row-title{width:110px;color:#a8bdd0;font-size:13px;flex:none}
+.segment{display:flex;gap:7px;flex-wrap:wrap}
+.segment button{border:1px solid #2a4058;background:#0b1827;color:#c0d0df;border-radius:9px;padding:8px 11px;font-weight:700}
+.segment button.active{border-color:#55badb;background:#133249;color:#fff}
+.segment button .sub{display:block;font-weight:500;font-size:10px;color:#8ca4b9;margin-top:2px}
+.range-wrap{display:flex;align-items:center;gap:10px;flex:1}
+input[type=range]{width:100%;accent-color:#59d8ff}
+.range-ends{font-size:11px;color:#7f96aa;display:flex;justify-content:space-between;width:100%}
+.control-help{margin-left:auto;color:#7f96aa;font-size:11px}
+.equal-badge{font-size:11px;color:#8be9b7;border:1px solid #285d49;background:#0e2a21;padding:5px 8px;border-radius:999px}
+.point-buttons button.top.active{border-color:#ffcf5a;color:#ffdf7e;background:#342914}
+.point-buttons button.bottom.active{border-color:#59d8ff;color:#8fe7ff;background:#112b36}
+.hole-symbol{width:22px;height:22px;vertical-align:middle;margin-right:5px}
+.mode-copy{margin-bottom:10px;padding:11px 13px;border:1px solid #243d57;background:#0a1726;border-radius:12px;color:#c6d7e6;font-size:13px;line-height:1.55}
+.mode-copy strong{color:#fff}
+.hidden-row{display:none!important}
+.footer-note{text-align:center;color:#61778c;font-size:11px;margin-top:10px}
+
+@media(max-width:1100px){
+  .main-grid{grid-template-columns:1fr 270px}
+  .inquiry-tabs{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:820px){
+  .app{padding:8px}
+  .topbar{height:auto;flex-wrap:wrap}
+  .brand{min-width:0}
+  .view-switch{margin-left:0}
+  .main-grid{grid-template-columns:1fr}
+  .screen-card{min-height:470px}
+  .stage-card{min-height:520px}
+  svg#scene{height:520px}
+  .inquiry-tabs{grid-template-columns:repeat(2,1fr)}
+  .control-row{align-items:flex-start;flex-direction:column;padding:10px 0}
+  .control-row label.row-title{width:auto}
+  .stage-footer{display:block}
+  .stage-tip{margin-top:7px;max-width:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="title"><h1>小孔成像</h1><p>装置 · 光路 · 像，同步观察</p></div>
+    </div>
+    <div class="view-switch">
+      <button id="btn3d" class="active">立体观察</button>
+      <button id="btn2d">光路剖视</button>
+    </div>
+    <button id="fullscreenBtn" class="ghost-btn">⛶ 全屏</button>
+    <button id="resetBtn" class="ghost-btn">↺ 复位</button>
+  </header>
+
+  <section class="main-grid">
+    <div class="stage-card">
+      <div class="stage-head">
+        <span id="viewBadge" class="badge">3D装置观察</span>
+        <span id="cutBadge" class="badge warn hidden">教学剖视：真实暗箱外壳不透明</span>
+        <span id="areaBadge" class="badge good hidden">孔面积保持不变</span>
+        <div class="stage-tools">
+          <button id="cutBtn">剖开观察</button>
+          <button id="rayBtn">显示光路</button>
+        </div>
+      </div>
+      <svg id="scene" viewBox="0 0 1000 610" aria-label="小孔成像实验装置"></svg>
+      <div class="stage-footer">
+        <div class="readout">
+          <div class="metric"><div class="k">物体高度</div><div class="v"><span id="objHeightText">6.0</span> cm</div></div>
+          <div class="metric"><div class="k">像的高度</div><div class="v"><span id="imgHeightText">7.2</span> cm</div></div>
+        </div>
+        <div id="stageTip" class="stage-tip">拖动立体装置可改变观察角度。切换到“光路剖视”，可看清同一实验状态下的物理过程。</div>
+      </div>
+    </div>
+
+    <aside class="screen-card">
+      <div class="panel-title">
+        <h2>从观察侧看光屏</h2>
+        <div class="eye">👁 观察者</div>
+      </div>
+      <div class="screen-wrap">
+        <div id="screenSurface" class="screen-surface translucent"></div>
+        <div id="imageHolder" class="image-holder"></div>
+        <div id="noImage" class="no-image" style="display:none"></div>
+      </div>
+      <button id="screenSideBtn" class="side-btn">查看光屏受光面</button>
+      <div id="materialNote" class="material-note">半透明膜既能透过部分光，又能把光向多个方向散射，适合作为外侧观察的小孔成像光屏。</div>
+      <div class="indicators">
+        <div class="indicator"><label>像的亮度</label><div class="bar"><i id="brightnessBar"></i></div></div>
+        <div class="indicator"><label>像的清晰度</label><div class="bar"><i id="clarityBar"></i></div></div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="controls">
+    <div class="inquiry-tabs" id="tabs">
+      <button data-mode="cause" class="active">① 为什么会成像</button>
+      <button data-mode="invert">② 为什么倒立</button>
+      <button data-mode="size">③ 孔大小</button>
+      <button data-mode="shape">④ 孔形状</button>
+      <button data-mode="material">⑤ 光屏材料</button>
+      <button data-mode="free">自由探索</button>
+    </div>
+
+    <div class="control-card">
+      <div id="modeCopy" class="mode-copy"><strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被小孔板挡住，只有少量光能通过小孔到达光屏。</div>
+
+      <div class="control-row" id="rowObject">
+        <label class="row-title">物体</label>
+        <div class="segment" id="objectSeg">
+          <button data-value="candle" class="active">蜡烛<span class="sub">真实实验</span></button>
+          <button data-value="arrow">箭头<span class="sub">上下关系</span></button>
+          <button data-value="f">字母 F<span class="sub">上下+左右</span></button>
+        </div>
+      </div>
+
+      <div class="control-row" id="rowPoints">
+        <label class="row-title">选择物点</label>
+        <div class="segment point-buttons">
+          <button id="topPointBtn" class="top active">● 顶部物点</button>
+          <button id="bottomPointBtn" class="bottom">● 底部物点</button>
+        </div>
+        <div class="control-help">可同时选择两个物点</div>
+      </div>
+
+      <div class="control-row hidden-row" id="rowApertureSize">
+        <label class="row-title">孔的大小</label>
+        <div class="range-wrap">
+          <span style="font-size:12px;color:#8ca2b7">小</span>
+          <input id="apertureRange" type="range" min="8" max="100" value="38">
+          <span style="font-size:12px;color:#8ca2b7">大</span>
+        </div>
+        <div class="control-help">其他条件保持不变</div>
+      </div>
+
+      <div class="control-row hidden-row" id="rowShape">
+        <label class="row-title">小孔形状</label>
+        <div class="segment" id="shapeSeg">
+          <button data-value="circle" class="active"><svg class="hole-symbol" viewBox="0 0 40 40"><circle cx="20" cy="20" r="11.3" fill="currentColor"/></svg>圆形</button>
+          <button data-value="square"><svg class="hole-symbol" viewBox="0 0 40 40"><rect x="10" y="10" width="20" height="20" fill="currentColor"/></svg>方形</button>
+          <button data-value="triangle"><svg class="hole-symbol" viewBox="0 0 40 40"><path d="M20 5 L37.5 35.3 L2.5 35.3 Z" fill="currentColor"/></svg>三角形</button>
+        </div>
+        <span class="equal-badge">面积保持不变</span>
+      </div>
+
+      <div class="control-row hidden-row" id="rowMaterial">
+        <label class="row-title">光屏材料</label>
+        <div class="segment" id="materialSeg">
+          <button data-value="transparent">透明膜<span class="sub">透过多 / 散射少</span></button>
+          <button data-value="translucent" class="active">半透明膜<span class="sub">透过 + 散射</span></button>
+          <button data-value="opaque">不透明膜<span class="sub">外侧不透光</span></button>
+        </div>
+      </div>
+
+      <div class="control-row hidden-row" id="rowFree">
+        <label class="row-title">自由改变位置</label>
+        <div class="range-wrap">
+          <span style="font-size:12px;color:#8ca2b7">物体远</span>
+          <input id="objectPosRange" type="range" min="230" max="390" value="300">
+          <span style="font-size:12px;color:#8ca2b7">物体近</span>
+        </div>
+        <div class="range-wrap">
+          <span style="font-size:12px;color:#8ca2b7">屏近</span>
+          <input id="screenPosRange" type="range" min="230" max="380" value="300">
+          <span style="font-size:12px;color:#8ca2b7">屏远</span>
+        </div>
+      </div>
+
+      <div class="control-row hidden-row" id="rowHeight">
+        <label class="row-title">物体高度</label>
+        <div class="range-wrap"><input id="heightRange" type="range" min="40" max="80" value="60"></div>
+        <div class="control-help">只显示物高与像高，不显示物距、像距</div>
+      </div>
+    </div>
+    <div class="footer-note">小孔成像教学模型 · 几何光学近似 · 极小孔径下的衍射不作为本页主线</div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+var svg=document.getElementById("scene");
+var NS="http://www.w3.org/2000/svg";
+var state={
+  view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent",
+  aperture:38, objectDist:300, screenDist:300, objectHeight:60,
+  topRay:true,bottomRay:false,cutaway:false,showRays:true,frontSide:false,
+  yaw:-0.34,pitch:0.22,dragging:false,lastX:0,lastY:0
+};
+var modeText={
+  cause:"<strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被小孔板挡住，只有少量光能通过小孔到达光屏。",
+  invert:"<strong>探究目标：</strong>同时追踪顶部和底部两个物点。比较它们在光屏上的位置，解释为什么得到倒立的像。",
+  size:"<strong>控制变量：</strong>固定物体、物体位置、光屏位置与材料，只改变孔的大小。观察亮度和清晰度如何同时变化。",
+  shape:"<strong>控制变量：</strong>圆形、方形、三角形小孔始终保持相同面积。比较像的整体形状是否由小孔形状决定。",
+  material:"<strong>探究目标：</strong>比较透明膜、半透明膜和不透明膜。区分“光是否到达光屏”和“观察者能否从这一侧看见像”。",
+  free:"<strong>自由探索：</strong>拖动物体位置、光屏位置与物体高度。页面只显示物体和像的大小数据，不显示物距、像距。"
+};
+var materialText={
+  transparent:"透明膜让大部分光直接通过，但散射很少；从外侧通常难以看到清楚、稳定的屏上图像。",
+  translucent:"半透明膜既能透过部分光，又能把光向多个方向散射，适合作为外侧观察的小孔成像光屏。",
+  opaque:"不透明膜不会让光从背面透出。外侧看不到透射图像，但在受光面仍然存在由小孔形成的光分布。"
+};
+
+function E(name,attrs,parent){
+  var el=document.createElementNS(NS,name);
+  if(attrs)Object.keys(attrs).forEach(function(k){el.setAttribute(k,attrs[k])});
+  if(parent)parent.appendChild(el);
+  return el;
+}
+function textEl(parent,x,y,txt,attrs){
+  var a={x:x,y:y,fill:"#b7cadc","font-size":"14","font-weight":"700"};
+  if(attrs)Object.assign(a,attrs);
+  var t=E("text",a,parent);t.textContent=txt;return t;
+}
+function clear(){while(svg.firstChild)svg.removeChild(svg.firstChild)}
+function line(g,a,b,attrs){
+  var d={x1:a[0],y1:a[1],x2:b[0],y2:b[1],stroke:"#fff","stroke-width":"2","stroke-linecap":"round"};
+  if(attrs)Object.assign(d,attrs);return E("line",d,g);
+}
+function poly(g,pts,attrs){
+  var d={points:pts.map(function(p){return p[0]+","+p[1]}).join(" ")};
+  if(attrs)Object.assign(d,attrs);return E("polygon",d,g);
+}
+function project(x,y,z){
+  var cy=Math.cos(state.yaw),sy=Math.sin(state.yaw),cp=Math.cos(state.pitch),sp=Math.sin(state.pitch);
+  var xr=x*cy-z*sy, zr=x*sy+z*cy;
+  var yr=y*cp-zr*sp, depth=y*sp+zr*cp;
+  var sc=900/(900+depth);
+  return [500+xr*sc,330-yr*sc,sc,depth];
+}
+function planePts(x,hy,hz){
+  return [[x,-hy,-hz],[x,hy,-hz],[x,hy,hz],[x,-hy,hz]].map(function(p){return project(p[0],p[1],p[2])});
+}
+function drawGrid(g){
+  for(var x=-420;x<=400;x+=40){
+    var a=project(x,-145,-150),b=project(x,-145,150);
+    line(g,a,b,{stroke:"rgba(70,105,135,.16)","stroke-width":"1"});
+  }
+  for(var z=-150;z<=150;z+=40){
+    var c=project(-420,-145,z),d=project(400,-145,z);
+    line(g,c,d,{stroke:"rgba(70,105,135,.16)","stroke-width":"1"});
+  }
+}
+function holeSize(){
+  return 6+state.aperture*0.16;
+}
+function holeShape2D(cx,cy,r,parent,fill){
+  fill=fill||"#020609";
+  if(state.shape==="circle"){
+    E("circle",{cx:cx,cy:cy,r:r,fill:fill},parent);
+  }else if(state.shape==="square"){
+    var s=r*1.772;
+    E("rect",{x:cx-s/2,y:cy-s/2,width:s,height:s,rx:1,fill:fill},parent);
+  }else{
+    var side=r*2.694, h=side*0.866;
+    poly(parent,[[cx,cy-h*0.58],[cx-side/2,cy+h*0.42],[cx+side/2,cy+h*0.42]],{fill:fill});
+  }
+}
+function drawObject3D(g){
+  var x=-state.objectDist;
+  var base=project(x,-120,0);
+  var topY=-120+state.objectHeight*2.05;
+  var top=project(x,topY,0);
+  var glow=E("circle",{cx:top[0],cy:top[1],r:24,fill:"rgba(255,193,70,.08)"},g);
+  if(state.object==="candle"){
+    line(g,base,project(x,-120+state.objectHeight*1.3,0),{stroke:"#f3e3c4","stroke-width":"14"});
+    E("path",{d:"M "+top[0]+" "+(top[1]-15)+" C "+(top[0]-14)+" "+(top[1]+1)+", "+(top[0]-7)+" "+(top[1]+18)+", "+top[0]+" "+(top[1]+20)+" C "+(top[0]+10)+" "+(top[1]+13)+", "+(top[0]+13)+" "+(top[1]+1)+", "+top[0]+" "+(top[1]-15)+" Z",fill:"#ffb13b",stroke:"#ffe59a","stroke-width":"2"},g);
+  }else if(state.object==="arrow"){
+    line(g,base,top,{stroke:"#ffd260","stroke-width":"12"});
+    poly(g,[[top[0],top[1]-18],[top[0]-18,top[1]+10],[top[0]+18,top[1]+10]],{fill:"#ffd260"},g);
+  }else{
+    var t=textEl(g,top[0]-12,base[1]-6,"F",{fill:"#ffd260","font-size":"74","font-family":"Arial","font-weight":"900"});
+    t.setAttribute("transform","rotate(0 "+top[0]+" "+base[1]+")");
+  }
+  var ptTop=project(x,topY,0), ptBot=project(x,-120,0);
+  E("circle",{cx:ptTop[0],cy:ptTop[1],r:state.topRay?7:5,fill:state.topRay?"#ffcf5a":"#5e6c78",stroke:"#fff","stroke-width":"1.5"},g);
+  E("circle",{cx:ptBot[0],cy:ptBot[1],r:state.bottomRay?7:5,fill:state.bottomRay?"#59d8ff":"#5e6c78",stroke:"#fff","stroke-width":"1.5"},g);
+}
+function drawRays3D(g){
+  if(!state.showRays)return;
+  var x=-state.objectDist;
+  var topY=-120+state.objectHeight*2.05;
+  var sources=[];
+  if(state.topRay)sources.push({p:[x,topY,0],color:"#ffcf5a"});
+  if(state.bottomRay)sources.push({p:[x,-120,0],color:"#59d8ff"});
+  var blockers=[[-92,-110],[-70,92],[80,-100],[106,75],[-20,118]];
+  sources.forEach(function(s){
+    blockers.forEach(function(q){
+      var a=project(s.p[0],s.p[1],s.p[2]),b=project(0,q[0],q[1]);
+      line(g,a,b,{stroke:s.color,"stroke-width":"1.2","stroke-opacity":".18"});
+    });
+    var rr=holeSize()*0.50;
+    [-1,0,1].forEach(function(k){
+      var ay=k*rr;
+      var a=project(s.p[0],s.p[1],0),h=project(0,ay,0);
+      line(g,a,h,{stroke:s.color,"stroke-width":"1.7","stroke-opacity":".65"});
+      var t=(state.screenDist)/(state.objectDist);
+      var screenY=ay+(ay-s.p[1])*t;
+      var end=project(state.screenDist,screenY,0);
+      line(g,h,end,{stroke:s.color,"stroke-width":"1.7","stroke-opacity":".72"});
+    });
+  });
+}
+function draw3D(){
+  clear();
+  var defs=E("defs",{},svg);
+  var glow=E("filter",{id:"glow"},defs);
+  E("feGaussianBlur",{stdDeviation:"4",result:"blur"},glow);
+  var g=E("g",{},svg);
+  drawGrid(g);
+
+  var floorA=project(-420,-145,-160),floorB=project(380,-145,-160),floorC=project(380,-145,160),floorD=project(-420,-145,160);
+  poly(g,[floorA,floorB,floorC,floorD],{fill:"rgba(10,23,38,.7)",stroke:"#263a50","stroke-width":"1"});
+
+  var plate=planePts(0,155,145);
+  poly(g,plate,{fill:"#2b343d",stroke:"#718090","stroke-width":"2"});
+  var hc=project(0,0,0),hs=holeSize()*hc[2];
+  holeShape2D(hc[0],hc[1],hs,g,"#02070c");
+
+  var x1=18,x2=state.screenDist,hy=132,hz=118;
+  var top=[project(x1,hy,-hz),project(x2,hy,-hz),project(x2,hy,hz),project(x1,hy,hz)];
+  var side=[project(x1,-hy,hz),project(x2,-hy,hz),project(x2,hy,hz),project(x1,hy,hz)];
+  var bottom=[project(x1,-hy,-hz),project(x2,-hy,-hz),project(x2,-hy,hz),project(x1,-hy,hz)];
+  var opacity=state.cutaway?".12":".86";
+  poly(g,bottom,{fill:"rgba(12,18,25,"+opacity+")",stroke:"#314155","stroke-width":"2"});
+  poly(g,top,{fill:"rgba(24,31,39,"+opacity+")",stroke:"#465566","stroke-width":"2"});
+  if(!state.cutaway)poly(g,side,{fill:"rgba(8,13,19,.94)",stroke:"#394a5d","stroke-width":"2"});
+  else{
+    line(g,side[0],side[1],{stroke:"#566677","stroke-width":"2","stroke-dasharray":"7 6"});
+    line(g,side[2],side[3],{stroke:"#566677","stroke-width":"2","stroke-dasharray":"7 6"});
+  }
+
+  var screen=planePts(state.screenDist,125,112);
+  var sf=state.material==="transparent"?"rgba(110,205,230,.12)":state.material==="translucent"?"rgba(205,230,220,.38)":"rgba(65,72,80,.96)";
+  poly(g,screen,{fill:sf,stroke:"#93a7b8","stroke-width":"2"});
+
+  drawRays3D(g);
+  drawObject3D(g);
+
+  textEl(g,project(-state.objectDist,-158,0)[0]-28,project(-state.objectDist,-158,0)[1]+22,"物体",{fill:"#d8e6f2","font-size":"13"});
+  textEl(g,hc[0]-24,hc[1]+188,"小孔",{fill:"#d8e6f2","font-size":"13"});
+  var sp=project(state.screenDist,-155,0);
+  textEl(g,sp[0]-24,sp[1]+20,"光屏",{fill:"#d8e6f2","font-size":"13"});
+  textEl(g,760,80,"拖动空白处旋转装置",{fill:"#7390a9","font-size":"12","font-weight":"500"});
+}
+function objYTop2D(){
+  return 320-state.objectHeight*1.75;
+}
+function imageScale(){return state.screenDist/state.objectDist}
+function draw2D(){
+  clear();
+  var g=E("g",{},svg);
+  E("rect",{x:0,y:0,width:1000,height:610,fill:"#09131f"},g);
+  for(var y=110;y<=500;y+=65)line(g,[80,y],[930,y],{stroke:"rgba(69,97,122,.13)","stroke-width":"1"});
+  line(g,[70,320],[935,320],{stroke:"#416078","stroke-width":"1.5","stroke-dasharray":"8 8","stroke-opacity":".6"});
+  textEl(g,86,302,"光轴",{fill:"#6f8ca5","font-size":"12","font-weight":"500"});
+
+  var ox=190,px=500,sx=820;
+  var top=objYTop2D(),base=320;
+  if(state.object==="candle"){
+    E("rect",{x:ox-10,y:top+30,width:20,height:base-top-30,rx:4,fill:"#eee0bd"},g);
+    E("path",{d:"M "+ox+" "+(top-8)+" C "+(ox-16)+" "+(top+11)+", "+(ox-7)+" "+(top+31)+", "+ox+" "+(top+33)+" C "+(ox+12)+" "+(top+24)+", "+(ox+12)+" "+(top+8)+", "+ox+" "+(top-8)+" Z",fill:"#ffb43f",stroke:"#ffe6a4","stroke-width":"2"},g);
+  }else if(state.object==="arrow"){
+    line(g,[ox,base],[ox,top],{stroke:"#ffd15d","stroke-width":"12"});
+    poly(g,[[ox,top-14],[ox-18,top+14],[ox+18,top+14]],{fill:"#ffd15d"});
+  }else{
+    textEl(g,ox-28,base,"F",{fill:"#ffd15d","font-size":"150","font-family":"Arial","font-weight":"900"});
+  }
+  E("circle",{cx:ox,cy:top,r:state.topRay?8:6,fill:state.topRay?"#ffcf5a":"#657584",stroke:"#fff","stroke-width":"1.5"},g);
+  E("circle",{cx:ox,cy:base,r:state.bottomRay?8:6,fill:state.bottomRay?"#59d8ff":"#657584",stroke:"#fff","stroke-width":"1.5"},g);
+
+  E("rect",{x:px-10,y:80,width:20,height:480,rx:4,fill:"#38444f",stroke:"#778797","stroke-width":"1.5"},g);
+  holeShape2D(px,320,7+state.aperture*.1,g,"#07101b");
+
+  var matFill=state.material==="transparent"?"rgba(105,195,222,.14)":state.material==="translucent"?"rgba(205,229,220,.42)":"rgba(75,82,90,.96)";
+  E("rect",{x:sx-8,y:100,width:16,height:440,rx:3,fill:matFill,stroke:"#a4b4c0","stroke-width":"1.5"},g);
+
+  if(state.showRays){
+    function bundle(sourceY,color){
+      var rr=4+state.aperture*.085;
+      [80,155,235,405,480,545].forEach(function(by){
+        line(g,[ox,sourceY],[px,by],{stroke:color,"stroke-width":"1.3","stroke-opacity":".14"});
+      });
+      [-rr,0,rr].forEach(function(dy){
+        var hy=320+dy;
+        line(g,[ox,sourceY],[px,hy],{stroke:color,"stroke-width":"2","stroke-opacity":".72"});
+        var iy=hy+(hy-sourceY)*(320/(px-ox));
+        line(g,[px,hy],[sx,iy],{stroke:color,"stroke-width":"2","stroke-opacity":".78"});
+      });
+    }
+    if(state.topRay)bundle(top,"#ffcf5a");
+    if(state.bottomRay)bundle(base,"#59d8ff");
+  }
+
+  var scale=imageScale();
+  var imgTop=320+(320-top)*scale;
+  var imgBottom=320;
+  var blur=Math.max(1,state.aperture*.09);
+  if(state.material!=="opaque"||state.frontSide){
+    if(state.object==="arrow"){
+      line(g,[sx,imgBottom],[sx,imgTop],{stroke:"#f7be50","stroke-width":Math.min(15,7+blur*.3),"stroke-opacity":".72"});
+      poly(g,[[sx,imgTop+14],[sx-16,imgTop-13],[sx+16,imgTop-13]],{fill:"#f7be50","fill-opacity":".72"});
+    }else{
+      E("ellipse",{cx:sx,cy:(imgTop+imgBottom)/2,rx:5+blur,ry:Math.max(12,(imgTop-imgBottom)/2),fill:"rgba(255,190,67,.24)"},g);
+    }
+  }
+
+  textEl(g,ox-22,565,"物体",{fill:"#d5e2ed","font-size":"13"});
+  textEl(g,px-20,585,"小孔板",{fill:"#d5e2ed","font-size":"13"});
+  textEl(g,sx-18,565,"光屏",{fill:"#d5e2ed","font-size":"13"});
+  textEl(g,620,95,"2D正交剖面：同一组实验状态",{fill:"#86a1b8","font-size":"13","font-weight":"500"});
+}
+function makeObjectSVG(type,heightPx){
+  var h=Math.max(70,heightPx),w=110;
+  if(type==="candle"){
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><defs><filter id="ig"><feGaussianBlur stdDeviation="2"/></filter></defs><ellipse cx="55" cy="40" rx="25" ry="32" fill="rgba(255,178,45,.18)" filter="url(#ig)"/><path d="M55 8 C34 34 42 58 55 62 C72 52 77 28 55 8Z" fill="#ffad35"/><path d="M55 24 C47 38 50 49 56 51 C63 46 65 35 55 24Z" fill="#fff1ad"/><rect x="43" y="61" width="24" height="90" rx="5" fill="#f0dfbd"/></svg>';
+  }
+  if(type==="arrow"){
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><path d="M55 6 L92 52 H70 V151 H40 V52 H18 Z" fill="#ffd05b"/></svg>';
+  }
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><text x="13" y="145" font-size="150" font-family="Arial" font-weight="900" fill="#ffd05b">F</text></svg>';
+}
+function renderScreen(){
+  var surface=document.getElementById("screenSurface");
+  var holder=document.getElementById("imageHolder");
+  var no=document.getElementById("noImage");
+  surface.className="screen-surface "+state.material;
+  var ap=state.aperture/100;
+  var brightness=Math.round(18+ap*72);
+  var clarity=Math.round(96-ap*55);
+  var visible=1,extraBlur=0;
+  if(state.material==="transparent"){visible=.18;brightness*=.55;clarity*=.82}
+  if(state.material==="translucent"){visible=.86;extraBlur=.45}
+  if(state.material==="opaque"&&!state.frontSide){visible=0}
+  if(state.material==="opaque"&&state.frontSide){visible=.9;brightness*=.8}
+  if(state.cutaway)brightness*=.95;
+  var blur=(.25+ap*3.4)+extraBlur;
+  var scale=imageScale();
+  var heightPx=Math.max(80,Math.min(260,130*scale));
+  holder.innerHTML=makeObjectSVG(state.object,heightPx);
+  holder.style.opacity=visible;
+  holder.style.filter="blur("+blur.toFixed(2)+"px) brightness("+(0.65+brightness/100*.65).toFixed(2)+") contrast("+(0.7+clarity/100*.55).toFixed(2)+")";
+  var sv=holder.querySelector("svg");
+  if(sv)sv.style.height=heightPx+"px";
+  no.style.display=visible===0?"block":"none";
+  no.textContent=state.frontSide?"":"不透明膜不透光：从外侧不能看到透射图像";
+  document.getElementById("brightnessBar").style.width=Math.max(3,brightness)+"%";
+  document.getElementById("clarityBar").style.width=Math.max(3,clarity)+"%";
+  document.getElementById("materialNote").textContent=materialText[state.material]+(state.frontSide?" 当前视角：受光面。":" 当前视角：外侧观察。");
+  document.getElementById("screenSideBtn").textContent=state.frontSide?"返回外侧观察":"查看光屏受光面";
+}
+function renderMetrics(){
+  document.getElementById("objHeightText").textContent=(state.objectHeight/10).toFixed(1);
+  document.getElementById("imgHeightText").textContent=(state.objectHeight/10*imageScale()).toFixed(1);
+}
+function render(){
+  if(state.view==="3d")draw3D();else draw2D();
+  renderScreen();renderMetrics();
+  document.getElementById("cutBadge").classList.toggle("hidden",!state.cutaway);
+  document.getElementById("areaBadge").classList.toggle("hidden",state.mode!=="shape");
+  document.getElementById("rayBtn").classList.toggle("active",state.showRays);
+  document.getElementById("cutBtn").classList.toggle("active",state.cutaway);
+  document.getElementById("viewBadge").textContent=state.view==="3d"?"3D装置观察":"2D正交光路";
+  document.getElementById("stageTip").textContent=state.view==="3d"?
+    "拖动立体装置可改变观察角度。剖开观察只改变教学视图，不改变实验本身。":
+    "剖面图与3D装置共用同一组参数。淡色发散光表示物点向多个方向发光，被挡住的光在小孔板处终止。";
+}
+function updateModeUI(){
+  document.getElementById("modeCopy").innerHTML=modeText[state.mode];
+  ["rowApertureSize","rowShape","rowMaterial","rowFree","rowHeight"].forEach(function(id){document.getElementById(id).classList.add("hidden-row")});
+  document.getElementById("rowPoints").classList.remove("hidden-row");
+  if(state.mode==="invert"){state.topRay=true;state.bottomRay=true;state.showRays=true}
+  if(state.mode==="cause"){state.topRay=true;state.bottomRay=false;state.showRays=true}
+  if(state.mode==="size")document.getElementById("rowApertureSize").classList.remove("hidden-row");
+  if(state.mode==="shape")document.getElementById("rowShape").classList.remove("hidden-row");
+  if(state.mode==="material")document.getElementById("rowMaterial").classList.remove("hidden-row");
+  if(state.mode==="free"){
+    document.getElementById("rowFree").classList.remove("hidden-row");
+    document.getElementById("rowHeight").classList.remove("hidden-row");
+  }
+  document.getElementById("topPointBtn").classList.toggle("active",state.topRay);
+  document.getElementById("bottomPointBtn").classList.toggle("active",state.bottomRay);
+}
+function segBind(id,key){
+  document.getElementById(id).addEventListener("click",function(e){
+    var b=e.target.closest("button[data-value]");if(!b)return;
+    state[key]=b.dataset.value;
+    Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("active",x===b)});
+    render();
+  });
+}
+document.getElementById("btn3d").onclick=function(){state.view="3d";this.classList.add("active");document.getElementById("btn2d").classList.remove("active");render()};
+document.getElementById("btn2d").onclick=function(){state.view="2d";this.classList.add("active");document.getElementById("btn3d").classList.remove("active");render()};
+document.getElementById("cutBtn").onclick=function(){state.cutaway=!state.cutaway;render()};
+document.getElementById("rayBtn").onclick=function(){state.showRays=!state.showRays;render()};
+document.getElementById("topPointBtn").onclick=function(){state.topRay=!state.topRay;this.classList.toggle("active",state.topRay);render()};
+document.getElementById("bottomPointBtn").onclick=function(){state.bottomRay=!state.bottomRay;this.classList.toggle("active",state.bottomRay);render()};
+document.getElementById("screenSideBtn").onclick=function(){state.frontSide=!state.frontSide;render()};
+document.getElementById("apertureRange").oninput=function(){state.aperture=+this.value;render()};
+document.getElementById("objectPosRange").oninput=function(){state.objectDist=620-(+this.value);render()};
+document.getElementById("screenPosRange").oninput=function(){state.screenDist=+this.value;render()};
+document.getElementById("heightRange").oninput=function(){state.objectHeight=+this.value;render()};
+document.getElementById("tabs").onclick=function(e){
+  var b=e.target.closest("button[data-mode]");if(!b)return;
+  state.mode=b.dataset.mode;
+  Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){x.classList.toggle("active",x===b)});
+  updateModeUI();render();
+};
+segBind("objectSeg","object");segBind("shapeSeg","shape");segBind("materialSeg","material");
+
+document.getElementById("resetBtn").onclick=function(){
+  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,showRays:true,frontSide:false,yaw:-.34,pitch:.22});
+  document.getElementById("apertureRange").value=38;document.getElementById("screenPosRange").value=300;document.getElementById("heightRange").value=60;
+  document.querySelectorAll(".segment").forEach(function(seg){var bs=seg.querySelectorAll("button[data-value]");bs.forEach(function(b){b.classList.toggle("active",b.dataset.value===state.object||b.dataset.value===state.shape||b.dataset.value===state.material)})});
+  document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.mode==="cause")});
+  document.getElementById("btn3d").classList.add("active");document.getElementById("btn2d").classList.remove("active");
+  updateModeUI();render();
+};
+document.getElementById("fullscreenBtn").onclick=function(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();
+  else document.exitFullscreen&&document.exitFullscreen();
+};
+
+svg.addEventListener("pointerdown",function(e){if(state.view!=="3d")return;state.dragging=true;state.lastX=e.clientX;state.lastY=e.clientY;svg.setPointerCapture(e.pointerId)});
+svg.addEventListener("pointermove",function(e){if(!state.dragging||state.view!=="3d")return;var dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;state.lastX=e.clientX;state.lastY=e.clientY;state.yaw+=dx*.006;state.pitch=Math.max(-.35,Math.min(.55,state.pitch+dy*.004));render()});
+svg.addEventListener("pointerup",function(){state.dragging=false});
+svg.addEventListener("pointercancel",function(){state.dragging=false});
+
+updateModeUI();render();
+})();
+</script>
+</body>
+</html>
