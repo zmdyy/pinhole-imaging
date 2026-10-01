@@ -318,7 +318,7 @@ var state={
   view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent", strayLight:false,
   aperture:38, objectDist:300, screenDist:300, objectHeight:60,
   topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,
-  yaw:-0.11,pitch:0.08,cameraScale:0.92,dragging:false,lastX:0,lastY:0
+  yaw:-0.11,pitch:0.08,cameraScale:0.92,dragging:false,dragTarget:null,lastX:0,lastY:0
 };
 var modeText={
   cause:"<strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被小孔板挡住，只有少量光能通过小孔到达光屏。",
@@ -327,7 +327,7 @@ var modeText={
   shape:"<strong>控制变量：</strong>圆形、方形、三角形小孔始终保持相同面积。比较像的整体形状是否由小孔形状决定。",
   material:"<strong>探究目标：</strong>比较透明膜、半透明膜和不透明膜。区分“光是否到达光屏”和“观察者能否从这一侧看见像”。",
   darkbox:"<strong>控制变量：</strong>保持物体、小孔、光屏不变，只比较暗箱完整与杂散光进入。重点观察图像对比度，而不是把“有无成像”混为一谈。",
-  free:"<strong>自由探索：</strong>拖动物体位置、光屏位置与物体高度。页面只显示物体和像的大小数据，不显示物距、像距。"
+  free:"<strong>自由探索：</strong>可直接拖动主画面中的“物体”和“光屏”手柄，也可使用右侧滑块；像的大小与光路实时同步。页面仍只显示物高与像高，不显示物距、像距。"
 };
 var materialText={
   transparent:"透明膜让大部分光直接通过，但散射很少；从外侧通常难以看到清楚、稳定的屏上图像。",
@@ -674,6 +674,14 @@ function drawImageOn3DScreen(g){
   else if(state.object==="f"){letterF(ghost,.6,soft);letterF(crisp,.9,0)}
   else{candle(ghost,.7,soft);candle(crisp,.9,0)}
 }
+function drawDragHandle(g,p,label,target){
+  var y=p[1]-30;
+  line(g,[p[0]-23,y],[p[0]+23,y],{stroke:"#71d9d1","stroke-width":"2"});
+  poly(g,[[p[0]-28,y],[p[0]-18,y-6],[p[0]-18,y+6]],{fill:"#71d9d1"});
+  poly(g,[[p[0]+28,y],[p[0]+18,y-6],[p[0]+18,y+6]],{fill:"#71d9d1"});
+  E("rect",{x:p[0]-38,y:y-16,width:76,height:32,rx:8,fill:"rgba(6,42,56,.74)",stroke:"#61cfc7","stroke-width":"1","data-drag":target,style:"cursor:ew-resize"},g);
+  textEl(g,p[0],y+4,label,{fill:"#d8ffff","font-size":"11","font-weight":"800","text-anchor":"middle","pointer-events":"none"});
+}
 function draw3D(){
   clear();
   var defs=E("defs",{},svg);
@@ -853,6 +861,11 @@ function draw2D(){
     }
   }
 
+  if(state.mode==="free"){
+    drawDragHandle(g,[ox,515],"拖动物体","object");
+    drawDragHandle(g,[sx,515],"拖动光屏","screen");
+  }
+
   textEl(g,ox-22,565,"物体",{fill:"#d5e2ed","font-size":"13"});
   textEl(g,px-20,585,"小孔板",{fill:"#d5e2ed","font-size":"13"});
   textEl(g,sx-18,565,"光屏",{fill:"#d5e2ed","font-size":"13"});
@@ -990,7 +1003,7 @@ document.getElementById("straySeg").addEventListener("click",function(e){
 });
 
 document.getElementById("resetBtn").onclick=function(){
-  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",strayLight:false,aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.11,pitch:.08,cameraScale:.92});
+  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",strayLight:false,aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.11,pitch:.08,cameraScale:.92,dragTarget:null});
   document.getElementById("apertureRange").value=38;document.getElementById("objectPosRange").value=320;document.getElementById("screenPosRange").value=300;document.getElementById("heightRange").value=60;
   document.querySelectorAll(".segment").forEach(function(seg){var bs=seg.querySelectorAll("button[data-value]");bs.forEach(function(b){b.classList.toggle("active",b.dataset.value===state.object||b.dataset.value===state.shape||b.dataset.value===state.material)})});
   document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.mode==="cause")});
@@ -1015,10 +1028,38 @@ svg.addEventListener("click",function(e){
   document.getElementById("bottomPointBtn").classList.toggle("active",state.bottomRay);
   render();
 });
-svg.addEventListener("pointerdown",function(e){if(e.target&&e.target.getAttribute&&e.target.getAttribute("data-point"))return;if(state.view!=="3d")return;state.dragging=true;state.lastX=e.clientX;state.lastY=e.clientY;svg.setPointerCapture(e.pointerId)});
-svg.addEventListener("pointermove",function(e){if(!state.dragging||state.view!=="3d")return;var dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;state.lastX=e.clientX;state.lastY=e.clientY;state.yaw=Math.max(-.50,Math.min(.28,state.yaw+dx*.0045));state.pitch=Math.max(-.12,Math.min(.30,state.pitch+dy*.0035));render()});
-svg.addEventListener("pointerup",function(){state.dragging=false});
-svg.addEventListener("pointercancel",function(){state.dragging=false});
+svg.addEventListener("pointerdown",function(e){
+  var drag=e.target&&e.target.getAttribute&&e.target.getAttribute("data-drag");
+  if(drag&&(state.view==="3d"||state.view==="2d")){
+    state.dragTarget=drag;state.lastX=e.clientX;state.lastY=e.clientY;svg.setPointerCapture(e.pointerId);return;
+  }
+  if(e.target&&e.target.getAttribute&&e.target.getAttribute("data-point"))return;
+  if(state.view!=="3d")return;
+  state.dragging=true;state.lastX=e.clientX;state.lastY=e.clientY;svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove",function(e){
+  var dx=e.clientX-state.lastX,dy=e.clientY-state.lastY;
+  if(state.dragTarget){
+    var vbScale=1000/Math.max(1,svg.clientWidth),dxSvg=dx*vbScale;
+    if(state.dragTarget==="object"){
+      var divisor=state.view==="2d"?.82:Math.max(.35,state.cameraScale*Math.cos(state.yaw));
+      state.objectDist=Math.max(230,Math.min(390,state.objectDist-dxSvg/divisor));
+      document.getElementById("objectPosRange").value=620-state.objectDist;
+    }else{
+      var divisor2=state.view==="2d"?.82:Math.max(.35,state.cameraScale*Math.cos(state.yaw));
+      state.screenDist=Math.max(230,Math.min(380,state.screenDist+dxSvg/divisor2));
+      document.getElementById("screenPosRange").value=state.screenDist;
+    }
+    state.lastX=e.clientX;state.lastY=e.clientY;render();return;
+  }
+  if(!state.dragging||state.view!=="3d")return;
+  state.lastX=e.clientX;state.lastY=e.clientY;
+  state.yaw=Math.max(-.50,Math.min(.28,state.yaw+dx*.0045));
+  state.pitch=Math.max(-.12,Math.min(.30,state.pitch+dy*.0035));
+  render();
+});
+svg.addEventListener("pointerup",function(){state.dragging=false;state.dragTarget=null});
+svg.addEventListener("pointercancel",function(){state.dragging=false;state.dragTarget=null});
 
 updateModeUI();render();
 })();
