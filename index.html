@@ -318,7 +318,7 @@ var state={
   view:"3d", mode:"cause", object:"candle", shape:"circle", material:"translucent", strayLight:false,
   aperture:38, objectDist:300, screenDist:300, objectHeight:60,
   topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,
-  yaw:-0.14,pitch:0.10,cameraScale:0.88,dragging:false,lastX:0,lastY:0
+  yaw:-0.11,pitch:0.08,cameraScale:0.92,dragging:false,lastX:0,lastY:0
 };
 var modeText={
   cause:"<strong>探究目标：</strong>点击物体上的光点，观察光从物点向多个方向传播；大部分光被小孔板挡住，只有少量光能通过小孔到达光屏。",
@@ -405,6 +405,50 @@ function avgDepth(points){
   var s=0;for(var i=0;i<points.length;i++)s+=(points[i][3]||0);
   return s/points.length;
 }
+function pline(g,pts,attrs){
+  var d={points:pts.map(function(p){return p[0]+","+p[1]}).join(" "),fill:"none"};
+  if(attrs)Object.assign(d,attrs);return E("polyline",d,g);
+}
+function horizontalRing3D(cx,y,cz,r,n){
+  var pts=[];n=n||48;
+  for(var i=0;i<n;i++){var a=Math.PI*2*i/n;pts.push(project(cx+r*Math.cos(a),y,cz+r*Math.sin(a)))}
+  return pts;
+}
+function drawVerticalCylinder(g,cx,y1,y2,cz,r){
+  var n=32,parts=[];
+  for(var i=0;i<n;i++){
+    var a1=Math.PI*2*i/n,a2=Math.PI*2*(i+1)/n,am=(a1+a2)/2;
+    var ps=[
+      project(cx+r*Math.cos(a1),y1,cz+r*Math.sin(a1)),
+      project(cx+r*Math.cos(a1),y2,cz+r*Math.sin(a1)),
+      project(cx+r*Math.cos(a2),y2,cz+r*Math.sin(a2)),
+      project(cx+r*Math.cos(a2),y1,cz+r*Math.sin(a2))
+    ];
+    var hi=Math.pow(Math.max(0,Math.cos(am-.5)),7),v=224+Math.round(hi*20);
+    parts.push({pts:ps,depth:avgDepth(ps),fill:"rgb("+v+","+(v-9)+","+(v-28)+")"});
+  }
+  parts.sort(function(a,b){return a.depth-b.depth}).forEach(function(s){
+    poly(g,s.pts,{fill:s.fill,stroke:"rgba(120,105,78,.16)","stroke-width":".5"});
+  });
+  poly(g,horizontalRing3D(cx,y2,cz,r,42),{fill:"#f5e8c9",stroke:"#dac9a5","stroke-width":"1"});
+}
+function drawSupportStand(g,x,r,floorY){
+  // 半圆托架 + 立柱 + 脚座，接近视频中的实验器材支架。
+  var arc=[];
+  for(var i=0;i<=28;i++){
+    var a=2.12+(4.16-2.12)*i/28;
+    arc.push(project(x,r*Math.cos(a),r*Math.sin(a)));
+  }
+  pline(g,arc,{stroke:"#526b79","stroke-width":"8","stroke-linecap":"round","stroke-linejoin":"round"});
+  pline(g,arc,{stroke:"rgba(178,201,211,.30)","stroke-width":"2","stroke-linecap":"round"});
+  var postTop=project(x,-r+10,0),postBottom=project(x,floorY+17,0);
+  line(g,postTop,postBottom,{stroke:"#455e6d","stroke-width":"11"});
+  line(g,postTop,postBottom,{stroke:"rgba(168,194,207,.22)","stroke-width":"2"});
+  drawBox3D(g,x,floorY+8,0,62,15,62,"#38536a");
+}
+function drawFloorShadow(g,cx,cy,rx,ry,opacity){
+  E("ellipse",{cx:cx,cy:cy,rx:rx,ry:ry,fill:"rgba(0,0,0,"+(opacity||.18)+")"},g);
+}
 function drawBox3D(g,cx,cy0,cz,sx,sy0,sz,baseColor){
   var x0=cx-sx/2,x1=cx+sx/2,y0=cy0-sy0/2,y1=cy0+sy0/2,z0=cz-sz/2,z1=cz+sz/2;
   var v=[
@@ -489,7 +533,7 @@ function drawCylinderShell(g,x1,x2,r,cy0){
     ];
     // 暗箱采用深色哑光材质，仅保留窄高光带来表现圆柱体，而不是亮灰塑料感。
     var highlight=Math.pow(Math.max(0,Math.cos(am-.72)),10);
-    var base=22+Math.round(highlight*36);
+    var underside=Math.max(0,-Math.cos(am));var base=18+Math.round(highlight*32)+Math.round(underside*4);
     var fill="rgb("+base+","+(base+8)+","+(base+14)+")";
     parts.push({pts:p,depth:avgDepth(p),fill:fill,hi:highlight});
   }
@@ -498,6 +542,8 @@ function drawCylinderShell(g,x1,x2,r,cy0){
   });
   poly(g,ring3D(x1,r,cy0,0,72),{fill:"none",stroke:"#40576a","stroke-width":"2.3"});
   poly(g,ring3D(x2,r,cy0,0,72),{fill:"none",stroke:"#586f80","stroke-width":"2.1"});
+  poly(g,ring3D(x1+9,r+.5,cy0,0,72),{fill:"none",stroke:"rgba(131,157,174,.24)","stroke-width":"1.2"});
+  poly(g,ring3D(x2-10,r+.5,cy0,0,72),{fill:"none",stroke:"rgba(131,157,174,.18)","stroke-width":"1.1"});
   // 圆筒纵向细高光，增强真实金属/塑料管的体积感。
   [-.76,-.69].forEach(function(a){
     var p1=project(x1,cy0+r*Math.cos(a),r*Math.sin(a)),p2=project(x2,cy0+r*Math.cos(a),r*Math.sin(a));
@@ -523,28 +569,42 @@ function drawRoundPlate(g,x,r,fill,stroke,width){
   return pts;
 }
 function drawRetainingRing(g,x,r){
-  drawThickRing3D(g,x,r,12,"#17242f");
-  poly(g,ring3D(x+12,r-9,0,0,72),{fill:"none",stroke:"#7e929f","stroke-width":"2"});
+  drawThickRing3D(g,x,r,14,"#14222d");
+  poly(g,ring3D(x+2,r+3,0,0,72),{fill:"none",stroke:"#243846","stroke-width":"4"});
+  poly(g,ring3D(x+14,r-8,0,0,72),{fill:"none",stroke:"#899da8","stroke-width":"2"});
+  poly(g,ring3D(x+14,r-12,0,0,72),{fill:"none",stroke:"rgba(199,218,224,.22)","stroke-width":"1"});
 }
 function drawObject3D(g){
   var x=-state.objectDist;
-  var base=project(x,-120,0);
-  var topY=-120+state.objectHeight*2.05;
-  var top=project(x,topY,0);
-  var glow=E("circle",{cx:top[0],cy:top[1],r:24,fill:"rgba(255,193,70,.08)"},g);
+  var yBase=-120;
+  var topY=yBase+state.objectHeight*2.05;
+  // 所有物体都放在一个小型实验底座上，避免“悬空图标感”。
+  var baseCenter=project(x,yBase-17,0);
+  poly(g,horizontalRing3D(x,yBase-18,0,31,48),{fill:"#263b49",stroke:"#698391","stroke-width":"1.5"});
+  poly(g,horizontalRing3D(x,yBase-12,0,23,48),{fill:"#344c5a",stroke:"#8199a5","stroke-width":"1"});
+  line(g,project(x,yBase-12,0),project(x,yBase,0),{stroke:"#708995","stroke-width":"7"});
+
   if(state.object==="candle"){
-    line(g,base,project(x,-120+state.objectHeight*1.3,0),{stroke:"#f3e3c4","stroke-width":"14"});
-    E("path",{d:"M "+top[0]+" "+(top[1]-15)+" C "+(top[0]-14)+" "+(top[1]+1)+", "+(top[0]-7)+" "+(top[1]+18)+", "+top[0]+" "+(top[1]+20)+" C "+(top[0]+10)+" "+(top[1]+13)+", "+(top[0]+13)+" "+(top[1]+1)+", "+top[0]+" "+(top[1]-15)+" Z",fill:"#ffb13b",stroke:"#ffe59a","stroke-width":"2"},g);
+    var bodyTop=topY-36;
+    drawVerticalCylinder(g,x,yBase,bodyTop,0,11);
+    // 烛芯
+    line(g,project(x,bodyTop+1,0),project(x,bodyTop+11,0),{stroke:"#3b2d22","stroke-width":"2.5"});
+    var top=project(x,topY,0),neck=project(x,bodyTop+9,0);
+    E("ellipse",{cx:top[0],cy:top[1]+7,rx:31,ry:38,fill:"rgba(255,174,50,.09)",filter:"url(#glow)"},g);
+    E("path",{d:"M "+top[0]+" "+(top[1]-12)+" C "+(top[0]-13)+" "+(top[1]+4)+", "+(top[0]-10)+" "+(top[1]+24)+", "+neck[0]+" "+(neck[1]-2)+" C "+(top[0]+14)+" "+(top[1]+17)+", "+(top[0]+14)+" "+(top[1]+3)+", "+top[0]+" "+(top[1]-12)+" Z",fill:"#ffad36",stroke:"#ffd47b","stroke-width":"1.4"},g);
+    E("path",{d:"M "+top[0]+" "+top[1]+" C "+(top[0]-5)+" "+(top[1]+8)+", "+(top[0]-3)+" "+(top[1]+16)+", "+top[0]+" "+(top[1]+18)+" C "+(top[0]+6)+" "+(top[1]+13)+", "+(top[0]+6)+" "+(top[1]+6)+", "+top[0]+" "+top[1]+" Z",fill:"#fff0a5"},g);
   }else if(state.object==="arrow"){
-    line(g,base,top,{stroke:"#ffd260","stroke-width":"12"});
-    poly(g,[[top[0],top[1]-18],[top[0]-18,top[1]+10],[top[0]+18,top[1]+10]],{fill:"#ffd260"},g);
+    var base=project(x,yBase,0),topA=project(x,topY,0);
+    line(g,base,topA,{stroke:"#ffd260","stroke-width":"12"});
+    poly(g,[[topA[0],topA[1]-18],[topA[0]-18,topA[1]+10],[topA[0]+18,topA[1]+10]],{fill:"#ffd260"});
   }else{
-    var t=textEl(g,top[0]-12,base[1]-6,"F",{fill:"#ffd260","font-size":"74","font-family":"Arial","font-weight":"900"});
-    t.setAttribute("transform","rotate(0 "+top[0]+" "+base[1]+")");
+    var baseP=project(x,yBase,0),topP=project(x,topY,0);
+    var t=textEl(g,topP[0]-14,baseP[1]-4,"F",{fill:"#ffd260","font-size":"76","font-family":"Arial","font-weight":"900"});
+    t.setAttribute("transform","rotate(0 "+topP[0]+" "+baseP[1]+")");
   }
-  var ptTop=project(x,topY,0), ptBot=project(x,-120,0);
-  E("circle",{cx:ptTop[0],cy:ptTop[1],r:state.topRay?7:5,fill:state.topRay?"#ffcf5a":"#5e6c78",stroke:"#fff","stroke-width":"1.5","data-point":"top",style:"cursor:pointer"},g);
-  E("circle",{cx:ptBot[0],cy:ptBot[1],r:state.bottomRay?7:5,fill:state.bottomRay?"#59d8ff":"#5e6c78",stroke:"#fff","stroke-width":"1.5","data-point":"bottom",style:"cursor:pointer"},g);
+  var ptTop=project(x,topY,0), ptBot=project(x,yBase,0);
+  E("circle",{cx:ptTop[0],cy:ptTop[1],r:state.topRay?6.5:4.5,fill:state.topRay?"#ffcf5a":"#536a76",stroke:"#fff","stroke-width":"1.2","data-point":"top",style:"cursor:pointer"},g);
+  E("circle",{cx:ptBot[0],cy:ptBot[1],r:state.bottomRay?6.5:4.5,fill:state.bottomRay?"#59d8ff":"#536a76",stroke:"#fff","stroke-width":"1.2","data-point":"bottom",style:"cursor:pointer"},g);
 }
 function drawRays3D(g){
   if(!state.showRays||state.exploded)return;
@@ -578,44 +638,53 @@ function drawRays3D(g){
 function drawImageOn3DScreen(g){
   if(state.exploded)return;
   var scale=imageScale(), optics=opticsModel();
-  var vis=state.material==="transparent"?.16:state.material==="translucent"?.66:(state.frontSide?.72:0);
+  var vis=state.material==="transparent"?.14:state.material==="translucent"?.64:(state.frontSide?.70:0);
   if(!vis)return;
+  if(state.strayLight)vis*=.5;
   var x=state.screenDist-1;
   var objBottom=-120, objTop=-120+state.objectHeight*2.05;
   var imgBottom=-objBottom*scale, imgTop=-objTop*scale;
   var col=state.object==="candle"?"#ffbd4a":"#ffd05b";
-  function seg(y1,z1,y2,z2,w,op){
-    line(g,project(x,y1,z1),project(x,y2,z2),{stroke:col,"stroke-width":w||6,"stroke-opacity":op==null?vis:op,"stroke-linecap":"round"});
+  var soft=Math.min(8,1.5+optics.blur*1.25);
+  var ghost=E("g",{filter:"url(#screenImageBlur)","opacity":Math.max(.12,vis*.42)},g);
+  var crisp=E("g",{"opacity":Math.max(.18,vis*(1-soft/14))},g);
+  function seg(parent,y1,z1,y2,z2,w,op,color){
+    line(parent,project(x,y1,z1),project(x,y2,z2),{stroke:color||col,"stroke-width":w||6,"stroke-opacity":op==null?1:op,"stroke-linecap":"round"});
   }
-  if(state.object==="arrow"){
-    seg(imgBottom,0,imgTop,0,7+Math.min(4,optics.blur),vis);
+  function arrow(parent,op,wBoost){
+    seg(parent,imgBottom,0,imgTop,0,7+(wBoost||0),op);
     var dir=imgTop<imgBottom?-1:1;
-    seg(imgTop,0,imgTop-dir*22,-18,6,vis);
-    seg(imgTop,0,imgTop-dir*22,18,6,vis);
-  }else if(state.object==="f"){
-    // F 的每条笔画都画在真实光屏平面上，再绕光轴180°，旋转视角时不会“贴在屏幕外面”。
+    seg(parent,imgTop,0,imgTop-dir*22,-18,6+(wBoost||0),op);
+    seg(parent,imgTop,0,imgTop-dir*22,18,6+(wBoost||0),op);
+  }
+  function letterF(parent,op,wBoost){
     var h=Math.abs(imgTop-imgBottom), y0=(imgTop+imgBottom)/2;
     var topY=y0-h*.48,botY=y0+h*.48;
-    seg(topY,22,botY,22,8,vis);
-    seg(topY,22,topY,-24,8,vis);
-    seg(y0-2,22,y0-2,-12,8,vis);
-  }else{
-    var candleTop=Math.min(imgTop,imgBottom), candleBottom=Math.max(imgTop,imgBottom);
-    seg(candleBottom,0,candleTop+28,0,10,vis*.82);
-    var flame=project(x,candleTop+9,0);
-    E("ellipse",{cx:flame[0],cy:flame[1],rx:7+optics.blur*.8,ry:12+optics.blur,fill:"#ffb43f","fill-opacity":vis},g);
-    E("ellipse",{cx:flame[0],cy:flame[1],rx:17+optics.blur*1.2,ry:20+optics.blur*1.2,fill:"rgba(255,177,55,"+(vis*.10)+")"},g);
+    seg(parent,topY,22,botY,22,8+(wBoost||0),op);
+    seg(parent,topY,22,topY,-24,8+(wBoost||0),op);
+    seg(parent,y0-2,22,y0-2,-12,8+(wBoost||0),op);
   }
+  function candle(parent,op,wBoost){
+    var candleTop=Math.min(imgTop,imgBottom), candleBottom=Math.max(imgTop,imgBottom);
+    seg(parent,candleBottom,0,candleTop+30,0,10+(wBoost||0),op,"#eee0bd");
+    var flame=project(x,candleTop+9,0);
+    E("ellipse",{cx:flame[0],cy:flame[1],rx:8+(wBoost||0),ry:14+(wBoost||0),fill:"#ffb43f","fill-opacity":op},parent);
+  }
+  if(state.object==="arrow"){arrow(ghost,.65,soft);arrow(crisp,.9,0)}
+  else if(state.object==="f"){letterF(ghost,.6,soft);letterF(crisp,.9,0)}
+  else{candle(ghost,.7,soft);candle(crisp,.9,0)}
 }
 function draw3D(){
   clear();
   var defs=E("defs",{},svg);
   var glow=E("filter",{id:"glow"},defs);
   E("feGaussianBlur",{stdDeviation:"4",result:"blur"},glow);
+  var imgBlur=E("filter",{id:"screenImageBlur",x:"-30%",y:"-30%",width:"160%",height:"160%"},defs);
+  E("feGaussianBlur",{stdDeviation:Math.min(6,.8+opticsModel().blur*.55)},imgBlur);
   var g=E("g",{},svg);
   drawGrid(g);
 
-  var r=132, floorY=-153;
+  var r=118, floorY=-145;
   var gap=state.exploded?42:0;
   var plateX=state.exploded?-78:0;
   var bodyStart=state.exploded?20:8;
@@ -623,22 +692,24 @@ function draw3D(){
   var screenX=state.screenDist+(state.exploded?gap*1.55:0);
   var ringX=screenX+10+(state.exploded?gap*.95:0);
 
-  // 支架随圆筒而动；拆解状态强调部件组成，不显示成像光路。
-  drawBox3D(g,Math.max(72,bodyEnd*.40),floorY+10,58,54,20,46,"#38536a");
-  drawBox3D(g,Math.max(142,bodyEnd*.78),floorY+10,58,54,20,46,"#38536a");
+  // 地面接触阴影 + 两个托架，构图和视频中的实验器材更接近。
+  var sh=project((bodyStart+bodyEnd)/2,floorY+1,0);
+  drawFloorShadow(g,sh[0]+8,sh[1]+6,Math.max(115,(bodyEnd-bodyStart)*.43),25,.20);
+  drawSupportStand(g,Math.max(66,bodyEnd*.33),r,floorY);
+  drawSupportStand(g,Math.max(148,bodyEnd*.76),r,floorY);
 
   if(!state.exploded)drawRays3D(g);
   drawCylinderShell(g,bodyStart,bodyEnd,r,0);
 
-  var screenFill=state.material==="transparent"?"rgba(154,221,233,.13)":state.material==="translucent"?"rgba(225,232,214,.78)":"rgba(54,61,67,.99)";
+  var screenFill=state.material==="transparent"?"rgba(154,221,233,.11)":state.material==="translucent"?"rgba(222,229,214,.83)":"rgba(54,61,67,.99)";
   drawRoundPlate(g,screenX,r-7,screenFill,state.material==="transparent"?"#88acbc":"#c6d0cf",2.2);
   drawScreenTexture3D(g,defs,screenX,r-10,state.material);
   if(!state.exploded)drawImageOn3DScreen(g);
   drawRetainingRing(g,ringX,r+1);
 
   // 小孔片做成较厚的独立金属圆片，边缘与视频中的前端筒底更接近。
-  drawThickRing3D(g,plateX,r,7,"#2c4658");
-  drawRoundPlate(g,plateX+1,r-5,"rgba(92,125,145,.98)","#9bb3c1",1.8);
+  drawThickRing3D(g,plateX,r,9,"#263d4c");
+  drawRoundPlate(g,plateX+1,r-5,"rgba(82,115,135,.99)","#a3bac5",1.8);
   var hc=project(plateX,0,0),hr=holeSize();
   poly(g,holePoints3D(plateX-.4,hr),{fill:"#02070b",stroke:"#071018","stroke-width":"1"});
 
@@ -790,7 +861,7 @@ function draw2D(){
 function makeObjectSVG(type,heightPx){
   var h=Math.max(70,heightPx),w=110;
   if(type==="candle"){
-    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><defs><filter id="ig"><feGaussianBlur stdDeviation="2"/></filter></defs><ellipse cx="55" cy="40" rx="25" ry="32" fill="rgba(255,178,45,.18)" filter="url(#ig)"/><path d="M55 8 C34 34 42 58 55 62 C72 52 77 28 55 8Z" fill="#ffad35"/><path d="M55 24 C47 38 50 49 56 51 C63 46 65 35 55 24Z" fill="#fff1ad"/><rect x="43" y="61" width="24" height="90" rx="5" fill="#f0dfbd"/></svg>';
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><defs><filter id="ig"><feGaussianBlur stdDeviation="3"/></filter><linearGradient id="wax" x1="0" x2="1"><stop offset="0" stop-color="#d6c59f"/><stop offset=".42" stop-color="#fff1ce"/><stop offset=".72" stop-color="#ead9b4"/><stop offset="1" stop-color="#c8b68f"/></linearGradient></defs><ellipse cx="55" cy="42" rx="31" ry="38" fill="rgba(255,178,45,.17)" filter="url(#ig)"/><rect x="42" y="64" width="26" height="87" rx="5" fill="url(#wax)"/><line x1="55" y1="64" x2="55" y2="54" stroke="#46352a" stroke-width="3"/><path d="M55 8 C37 30 41 53 55 60 C70 50 76 28 55 8Z" fill="#ffad35"/><path d="M55 26 C48 37 49 48 56 52 C63 47 65 37 55 26Z" fill="#fff3ae"/><ellipse cx="55" cy="154" rx="24" ry="4" fill="rgba(0,0,0,.18)"/></svg>';
   }
   if(type==="arrow"){
     return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 110 160"><path d="M55 6 L92 52 H70 V151 H40 V52 H18 Z" fill="#ffd05b"/></svg>';
@@ -889,7 +960,7 @@ document.getElementById("btn3d").onclick=function(){setView("3d")};
 document.getElementById("btn2d").onclick=function(){setView("2d")};
 document.getElementById("btnHole").onclick=function(){setView("hole")};
 document.getElementById("btnScreen").onclick=function(){setView("screen")};
-function resetCamera(){state.yaw=-0.14;state.pitch=0.10;state.cameraScale=.88;if(state.view!=="3d")setView("3d");else render();}
+function resetCamera(){state.yaw=-0.11;state.pitch=0.08;state.cameraScale=.92;if(state.view!=="3d")setView("3d");else render();}
 document.getElementById("cameraBtn").onclick=resetCamera;
 document.getElementById("cameraInlineBtn").onclick=resetCamera;
 document.getElementById("zoomIn").onclick=function(){state.cameraScale=Math.min(1.15,state.cameraScale+.06);render()};
@@ -919,7 +990,7 @@ document.getElementById("straySeg").addEventListener("click",function(e){
 });
 
 document.getElementById("resetBtn").onclick=function(){
-  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",strayLight:false,aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.14,pitch:.10,cameraScale:.88});
+  Object.assign(state,{view:"3d",mode:"cause",object:"candle",shape:"circle",material:"translucent",strayLight:false,aperture:38,objectDist:300,screenDist:300,objectHeight:60,topRay:true,bottomRay:false,cutaway:false,exploded:false,showRays:true,frontSide:false,yaw:-.11,pitch:.08,cameraScale:.92});
   document.getElementById("apertureRange").value=38;document.getElementById("objectPosRange").value=320;document.getElementById("screenPosRange").value=300;document.getElementById("heightRange").value=60;
   document.querySelectorAll(".segment").forEach(function(seg){var bs=seg.querySelectorAll("button[data-value]");bs.forEach(function(b){b.classList.toggle("active",b.dataset.value===state.object||b.dataset.value===state.shape||b.dataset.value===state.material)})});
   document.querySelectorAll("#tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.mode==="cause")});
